@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: moa-backend
+  datasource:
+    url: jdbc:postgresql://localhost:15432/moa
+    username: moa
+    password: moa_password
+
+  jpa:
+    hibernate:
+      ddl-auto: validate   # 스키마는 Flyway가 만들고, JPA는 "검증"만
+    properties:
+      hibernate:
+        format_sql: true
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+

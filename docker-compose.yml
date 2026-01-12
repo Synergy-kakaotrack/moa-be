@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16
+    container_name: moa-postgres
+    restart: unless-stopped
+    ports:
+      - "15432:5432"
+    environment:
+      POSTGRES_DB: moa
+      POSTGRES_USER: moa
+      POSTGRES_PASSWORD: moa_password
+      TZ: Asia/Seoul
+    volumes:
+      - moa_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U moa -d moa"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  moa_pgdata:
