@@ -31,7 +31,11 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-webmvc'
 	compileOnly 'org.projectlombok:lombok'
 
-	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	// Boot 4에서 Flyway 자동실행 복구
+	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+	//Flyway 10+에서 DB별 모듈이 분리된 케이스 대비 (Postgres)
+	implementation 'org.flywaydb:flyway-database-postgresql'
 	runtimeOnly 'org.postgresql:postgresql'
 
 	annotationProcessor 'org.projectlombok:lombok'

@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: moa
       POSTGRES_USER: moa
-      POSTGRES_PASSWORD: moa_password
+      POSTGRES_PASSWORD: moa-password
       TZ: Asia/Seoul
     volumes:
       - moa_pgdata:/var/lib/postgresql/data
