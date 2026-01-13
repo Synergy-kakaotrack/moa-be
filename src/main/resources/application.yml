@@ -17,3 +17,10 @@ spring:
     enabled: true
     baseline-on-migrate: true
 
+  debug: true
+  logging:
+    level:
+      org.springframework.boot.autoconfigure: DEBUG
+      org.flywaydb: DEBUG
+
+
