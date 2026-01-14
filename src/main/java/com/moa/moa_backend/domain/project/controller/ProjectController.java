@@ -52,4 +52,28 @@ public class ProjectController {
                 .created(URI.create("/api/projects/" + created.id()))
                 .body(created);
     }
+
+    // 프로젝트 수정
+    @PatchMapping("/{projectId}")
+    public ProjectDto.UpdateResponse updateProject(
+            HttpServletRequest request,
+            @PathVariable Long projectId,
+            @Valid @RequestBody ProjectDto.UpdateRequest body
+    ) {
+        Long userId = (Long) request.getAttribute("userId");
+        return projectService.updateProject(userId, projectId, body);
+    }
+
+    // 프로젝트 삭제
+    @DeleteMapping("/{projectId}")
+    public ResponseEntity<Void> deleteProject(
+            HttpServletRequest request,
+            @PathVariable Long projectId
+    ) {
+        Long userId = (Long) request.getAttribute("userId");
+
+        projectService.deleteProject(userId, projectId);
+
+        return ResponseEntity.noContent().build();
+    }
 }

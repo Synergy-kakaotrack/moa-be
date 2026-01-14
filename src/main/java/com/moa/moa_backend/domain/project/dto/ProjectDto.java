@@ -56,6 +56,33 @@ public class ProjectDto {
         }
     }
 
+    // 프로젝트 수정
+    public record UpdateRequest(
+            @Size(max = 100, message = "프로젝트 이름은 100자 이하여야 합니다.")
+            String name,
+
+            @Size(max = 1000, message = "프로젝트 설명은 1000자 이하여야 합니다.")
+            String description
+    ) { }
+
+    public record UpdateResponse(
+            Long id,
+            String name,
+            String description,
+            Instant createdAt,
+            Instant updatedAt
+    ) {
+        public static UpdateResponse from(Project project) {
+            return new UpdateResponse(
+                    project.getId(),
+                    project.getName(),
+                    project.getDescription(),
+                    project.getCreatedAt(),
+                    project.getUpdatedAt()
+            );
+        }
+    }
+
     // 프로젝트 개수 응답
     public record Count(
             long count

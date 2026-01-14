@@ -33,12 +33,23 @@ public class Project {
     @Column(name = "project_updated_at", nullable = false)
     private Instant updatedAt;
 
+    // 프로젝트 생성
     public static Project create(Long userId, String name, String description) {
         Project project = new Project();
         project.userId = userId;
         project.name = name;
         project.description = description;
         return project;
+    }
+
+    // 프로젝트 수정
+    public void update(String name, String description) {
+        if (name != null) {
+            this.name = name;
+        }
+        if (description != null) {
+            this.description = description;
+        }
     }
 
     @PrePersist
