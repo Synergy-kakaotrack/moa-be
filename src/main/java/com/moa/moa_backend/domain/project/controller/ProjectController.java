@@ -3,9 +3,7 @@ package com.moa.moa_backend.domain.project.controller;
 import com.moa.moa_backend.domain.project.dto.ProjectDto;
 import com.moa.moa_backend.domain.project.service.ProjectService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 import java.util.List;
@@ -18,7 +16,17 @@ public class ProjectController {
     private final ProjectService projectService; // Service 계층의 의존성 주입
 
     @GetMapping
-    public List<ProjectDto.ListItem> getProjectList(){
-        return projectService.getProjectList();
+    public List<ProjectDto> getProjectList(
+            @RequestHeader("X-User-Id") Long userId
+    ) {
+        return projectService.getProjectList(userId);
+    }
+
+    @GetMapping("/count")
+    public ProjectDto getProjectCount(
+            @RequestHeader("X-User-Id") Long userId
+    ) {
+        long count = projectService.getProjectCount(userId);
+        return new ProjectDto(count);
     }
 }

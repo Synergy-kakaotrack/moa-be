@@ -26,8 +26,16 @@ INSERT INTO projects (
 ) VALUES (
              1,
              1,  -- user_id = 1 (Lion)
-             'MOA 개발 프로젝트',
-             'MOA 서비스 개발을 위한 프로젝트',
+             'MOA Development Project',
+             'Project for development of MOA service',
+             NOW(),
+             NOW()
+         ),
+         (
+             1,
+             1,  -- user_id = 1 (Lion)
+             'MOA Development Project2',
+             'Project for development of MOA service2',
              NOW(),
              NOW()
          )
