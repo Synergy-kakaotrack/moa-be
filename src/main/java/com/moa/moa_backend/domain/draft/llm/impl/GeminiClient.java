@@ -31,7 +31,7 @@ public class GeminiClient {
     public GeminiClient(
             WebClient.Builder builder,
             @Value("${moa.llm.gemini.api-key}") String apiKey,
-            @Value("${moa.llm.gemini.model:gemini-1.5-flash}") String model,
+            @Value("${moa.llm.gemini.model:gemini-2.0-flash}") String model,
             @Value("${moa.llm.timeout-ms:3000}") long timeoutMs
     ) {
         this.webClient = builder
@@ -46,7 +46,7 @@ public class GeminiClient {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
 
-    /** Adapter가 호출하는 메서드: 입력 -> (Gemini 호출) -> JSON 파싱 결과 */
+    //Adapter가 호출하는 메서드: 입력 -> (Gemini 호출) -> JSON 파싱 결과
     public LlmResult recommend(RecommendInput input) {
         try {
             String prompt = buildPrompt(input);

@@ -5,6 +5,7 @@ import com.moa.moa_backend.domain.draft.dto.DraftRecommendation;
 import com.moa.moa_backend.domain.draft.entity.DraftStage;
 import com.moa.moa_backend.domain.draft.entity.RecMethod;
 import com.moa.moa_backend.domain.draft.llm.LlmRecommendationPort;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import java.util.stream.Collectors;
 /**
  * Gemini 결과를 정책대로 정규화하고, 실패 시 휴리스틱으로 폴백한다.
  */
+@Primary
 @Component
 public class GeminiLlmAdapter implements LlmRecommendationPort {
 
