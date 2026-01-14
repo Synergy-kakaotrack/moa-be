@@ -11,4 +11,6 @@ import java.util.List;
 public interface ProjectRepository extends JpaRepository<Project, Long> {
 
     List<Project> findAllByUserId(Long userId, Sort sort);
+
+    long countByUserId(Long userId);
 }

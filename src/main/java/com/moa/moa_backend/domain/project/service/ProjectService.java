@@ -1,7 +1,11 @@
 package com.moa.moa_backend.domain.project.service;
 
 import com.moa.moa_backend.domain.project.dto.ProjectDto;
+import com.moa.moa_backend.domain.project.entity.Project;
 import com.moa.moa_backend.domain.project.repository.ProjectRepository;
+import com.moa.moa_backend.domain.user.repository.UserRepository;
+import com.moa.moa_backend.global.error.ApiException;
+import com.moa.moa_backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -34,6 +38,25 @@ public class ProjectService {
                 .stream()
                 .map(ProjectDto.ListItem::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public long getProjectCount(Long userId) {
+        return projectRepository.countByUserId(userId);
+    }
+
+    @Transactional
+    public ProjectDto.CreateResponse createProject(Long userId, ProjectDto.CreateRequest request) {
+
+        Project project = Project.create(
+                userId,
+                request.name(),
+                request.description()
+        );
+
+        Project saved = projectRepository.save(project);
+
+        return ProjectDto.CreateResponse.from(saved);
     }
 
 }

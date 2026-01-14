@@ -33,6 +33,14 @@ public class Project {
     @Column(name = "project_updated_at", nullable = false)
     private Instant updatedAt;
 
+    public static Project create(Long userId, String name, String description) {
+        Project project = new Project();
+        project.userId = userId;
+        project.name = name;
+        project.description = description;
+        return project;
+    }
+
     @PrePersist
     private void onCreate() {
         Instant now = Instant.now();
