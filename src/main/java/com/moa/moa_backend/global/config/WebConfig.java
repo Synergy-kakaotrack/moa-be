@@ -12,10 +12,11 @@ public class WebConfig {
     @Bean
     public FilterRegistrationBean<UserIdFilter> userIdfilter(UserRepository userRepository){
         FilterRegistrationBean<UserIdFilter> filterRegistrationBean = new FilterRegistrationBean<>();
-
         filterRegistrationBean.setFilter(new UserIdFilter(userRepository));
-        filterRegistrationBean.addUrlPatterns("/*"); //API 요청에만 적용한다.
+
+        filterRegistrationBean.addUrlPatterns("/api/*"); //API 요청에만 적용한다.
         filterRegistrationBean.setOrder(1); //다른 필터보다 먼저
+
         return filterRegistrationBean;
     }
 
