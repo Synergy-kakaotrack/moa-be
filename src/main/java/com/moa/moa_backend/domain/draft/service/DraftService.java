@@ -3,12 +3,11 @@ package com.moa.moa_backend.domain.draft.service;
 import com.moa.moa_backend.domain.draft.dto.*;
 import com.moa.moa_backend.domain.draft.entity.Draft;
 import com.moa.moa_backend.domain.draft.entity.DraftStage;
-import com.moa.moa_backend.domain.draft.entity.RecMethod;
 import com.moa.moa_backend.domain.draft.llm.LlmRecommendationPort;
 import com.moa.moa_backend.domain.draft.repository.DraftRepository;
 import com.moa.moa_backend.domain.project.repository.ProjectRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapRepository;
-import com.moa.moa_backend.domain.scrap.entity.Scrap;
+import com.moa.moa_backend.domain.scrap.service.ScrapService;
 import com.moa.moa_backend.global.error.ApiException;
 import com.moa.moa_backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.List;
 
 /**
@@ -36,6 +34,7 @@ public class DraftService {
     private final ProjectRepository projectRepository;
     private final ScrapRepository scrapRepository;
     private final LlmRecommendationPort llmRecommendationPort;
+    private final ScrapService scrapService;
 
 
     /**
@@ -169,52 +168,12 @@ public class DraftService {
             throw new ApiException(ErrorCode.DRAFT_EXPIRED);
         }
 
-        // 프로젝트 존재 + 소유자 검증
-        if (!projectRepository.existsByIdAndUserId(req.projectId(), userId)) {
-            throw new ApiException(ErrorCode.PROJECT_NOT_FOUND);
-        }
-
-        // stage 검증 (고정 목록 범위 밖 -> 400에러)
-        if (req.stage() == null || !DraftStage.isValid(req.stage())) {
-            throw new ApiException(
-                    ErrorCode.INVALID_REQUEST,
-                    "유효하지 않은 작업 단계입니다: " + req.stage()
-            );
-        }
-
-        String rawHtml = normalizeRequired(req.rawHtml(), "rawHtml");
-
-        // scraps 테이블은 NOT NULL 컬럼이 많으므로 null 방지
-        String subtitle = normalizeRequired(req.subtitle(), "subtitle");
-        String aiSource = normalizeRequired(req.aiSource(), "aiSource");
-        String aiSourceUrl = normalizeRequired(req.aiSourceUrl(), "aiSourceUrl");
-
-        boolean userRecProject = Boolean.TRUE.equals(req.userRecProject());
-        boolean userRecStage = Boolean.TRUE.equals(req.userRecStage());
-        boolean userRecSubtitle = Boolean.TRUE.equals(req.userRecSubtitle());
-
-
-
-        //추천 방식은 Draft 생성 시 결정된 값 사용가져옴
-        RecMethod recMethod = draft.getRecMethod();
-
-        Scrap scrap = Scrap.create(
-                req.projectId(),
+        Long scrapId = scrapService.createFromDraftCommit(
                 userId,
-                rawHtml,
-                subtitle,
-                req.stage(),
-                req.memo(),
-                aiSource,
-                aiSourceUrl,
-                userRecProject,
-                userRecStage,
-                userRecSubtitle,
-                now,
-                recMethod
+                req,
+                draft.getRecMethod(),
+                now
         );
-
-        Long scrapId = scrapRepository.save(scrap).getId();
 
         // draft 삭제 (같은 트랜잭션) -> Scrap 저장 성공 시에만 Draft 삭제됨
         draftRepository.delete(draft);
@@ -235,33 +194,6 @@ public class DraftService {
 
     }
 
-
-
-
-
-    /**
-     * Base64 디코딩
-     *
-     * @param base64 Base64 인코딩된 문자열
-     * @return 디코딩된 바이트 배열
-     * @throws ApiException INVALID_REQUEST (400) - base64가 null이거나 빈 문자열
-     */
-    private static byte[] decodeBase64(String base64) {
-        if (base64 == null || base64.isBlank()) {
-            throw new ApiException(
-                    ErrorCode.INVALID_REQUEST,
-                    "rawHtmlGzipBase64는 필수입니다."
-            );
-        }
-        try {
-            return Base64.getDecoder().decode(base64);
-        } catch (IllegalArgumentException e) {
-            throw new ApiException(
-                    ErrorCode.INVALID_REQUEST,
-                    "rawHtmlGzipBase64 형식이 올바르지 않습니다."
-            );
-        }
-    }
 
     /**
      * 필수 문자열 필드 검증 및 정규화

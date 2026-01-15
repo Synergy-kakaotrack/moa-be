@@ -129,7 +129,7 @@ public class DraftController {
      * - stage: 최종 선택한 단계
      * - subtitle: 최종 확정한 소제목
      * - memo: 사용자 메모 (선택)
-     * - rawHtmlGzipBase64: 원본 HTML (gzip + base64)
+     * - rawHtml: 원본 HTML
      * - aiSource: AI 출처 정보
      * - aiSourceUrl: AI 출처 URL
      * - userRecProject: 사용자가 프로젝트를 변경했는가?
@@ -151,42 +151,34 @@ public class DraftController {
     @Operation(
             summary = "드래프트 커밋 (스크랩 생성)",
             description = """
-                    추천 결과를 사용자가 확정하여 scraps 테이블에 저장합니다.
-                    성공 시 draft는 같은 트랜잭션에서 삭제됩니다.
-                    """,
+            추천 결과를 사용자가 확정하여 scraps 테이블에 저장합니다.
+            성공 시 draft는 같은 트랜잭션에서 삭제됩니다.
+            """,
             responses = {
                     @ApiResponse(
                             responseCode = "201",
                             description = "스크랩 생성 성공",
                             content = @Content(schema = @Schema(implementation = DraftCommitResponse.class))
                     ),
-                    @ApiResponse(
-                            responseCode = "404",
-                            description = "드래프트 없음 또는 소유자 불일치"
-                    )
+                    @ApiResponse(responseCode = "400", description = "요청값 검증 실패 (stage/rawHtml 등)"),
+                    @ApiResponse(responseCode = "404", description = "드래프트 없음 또는 소유자 불일치"),
+                    @ApiResponse(responseCode = "410", description = "드래프트 만료")
             }
     )
     @PostMapping("/{draftId}/commit")
     public ResponseEntity<DraftCommitResponse> commit(
-            @Parameter(
-                    description = "요청 사용자 ID",
-                    required = true,
-                    example = "1"
-            )
             @RequestHeader("X-User-Id") Long userId,
-
-            @Parameter(
-                    description = "커밋할 드래프트 ID",
-                    required = true,
-                    example = "100"
-            )
             @PathVariable Long draftId,
-
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = DraftCommitRequest.class))
+            )
             @RequestBody DraftCommitRequest request
     ) {
         DraftCommitResponse res = draftService.commit(userId, draftId, request);
         return ResponseEntity.status(201).body(res);
     }
+
 
     /**
      * 드래프트 삭제
