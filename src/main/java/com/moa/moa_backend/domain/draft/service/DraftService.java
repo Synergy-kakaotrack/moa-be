@@ -73,7 +73,8 @@ public class DraftService {
                 .orElse(null);
 
         // 3) fixedStages -> 작업단계 서버 고정 목록)
-        List<String> fixedStages = List.of("기획", "조사&분석", "설계", "구현", "테스트", "기타");
+        List<String> fixedStages = DraftStage.FIXED_STAGES;
+
 
         // 4) LLM 추천 실행
         DraftRecommendCommand command = new DraftRecommendCommand(
@@ -168,6 +169,11 @@ public class DraftService {
             throw new ApiException(ErrorCode.DRAFT_EXPIRED);
         }
 
+        // 프로젝트 존재 + 소유자 검증
+        if (!projectRepository.existsByIdAndUserId(req.projectId(), userId)) {
+            throw new ApiException(ErrorCode.PROJECT_NOT_FOUND);
+        }
+
         // stage 검증 (고정 목록 범위 밖 -> 400에러)
         if (req.stage() == null || !DraftStage.isValid(req.stage())) {
             throw new ApiException(
@@ -176,8 +182,7 @@ public class DraftService {
             );
         }
 
-        // HTML 원본 데이터 디코딩 -> 프론트에서 gzip 압축 + base64 인코딩하여 전송
-        byte[] rawGzip = decodeBase64(req.rawHtmlGzipBase64());
+        String rawHtml = normalizeRequired(req.rawHtml(), "rawHtml");
 
         // scraps 테이블은 NOT NULL 컬럼이 많으므로 null 방지
         String subtitle = normalizeRequired(req.subtitle(), "subtitle");
@@ -196,7 +201,7 @@ public class DraftService {
         Scrap scrap = Scrap.create(
                 req.projectId(),
                 userId,
-                rawGzip,
+                rawHtml,
                 subtitle,
                 req.stage(),
                 req.memo(),
@@ -212,7 +217,7 @@ public class DraftService {
         Long scrapId = scrapRepository.save(scrap).getId();
 
         // draft 삭제 (같은 트랜잭션) -> Scrap 저장 성공 시에만 Draft 삭제됨
-        draftRepository.deleteByIdAndUserId(draftId, userId);
+        draftRepository.delete(draft);
 
         return new DraftCommitResponse(scrapId);
     }
@@ -227,6 +232,7 @@ public class DraftService {
     public void deleteDraft(Long userId, Long draftId) {
         // 멱등: 없어도 204
         draftRepository.deleteByIdAndUserId(draftId, userId);
+
     }
 
 

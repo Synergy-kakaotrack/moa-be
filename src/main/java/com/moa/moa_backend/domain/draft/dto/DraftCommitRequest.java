@@ -9,7 +9,7 @@ public record DraftCommitRequest(
         @NotBlank String subtitle,
 
         String memo,
-        String rawHtmlGzipBase64,
+        String rawHtml,
 
         @NotBlank String aiSource,
         @NotBlank String aiSourceUrl,

@@ -8,13 +8,7 @@ import java.time.Instant;
 
 @Getter
 @Entity
-@Table(
-        name = "scraps",
-        indexes = {
-                @Index(name = "idx_scraps_user_id", columnList = "user_id"),
-                @Index(name = "idx_scraps_captured_at", columnList = "captured_at")
-        }
-)
+@Table(name = "scraps")
 public class Scrap {
 
     @Id
@@ -28,9 +22,11 @@ public class Scrap {
     @Column(name = "user_id", nullable = false)
     private Long userId;
 
-    @Column(name = "raw_html_gzip", nullable = false, columnDefinition = "bytea")
-    private byte[] rawHtmlGzip;
+    // === 원본 데이터 ===
+    @Column(name = "raw_html", nullable = false, columnDefinition = "TEXT")
+    private String rawHtml;
 
+    // === 메타데이터 ===
     @Column(name = "subtitle", nullable = false, length = 120)
     private String subtitle;
 
@@ -40,12 +36,14 @@ public class Scrap {
     @Column(name = "memo", columnDefinition = "TEXT")
     private String memo;
 
+    // === AI 출처 정보 ===
     @Column(name = "ai_source", nullable = false, length = 30)
     private String aiSource;
 
     @Column(name = "ai_source_url", nullable = false, columnDefinition = "TEXT")
     private String aiSourceUrl;
 
+    // === 추천 수용 여부 ===
     @Column(name = "user_rec_project", nullable = false)
     private boolean userRecProject;
 
@@ -55,6 +53,7 @@ public class Scrap {
     @Column(name = "user_rec_subtitle", nullable = false)
     private boolean userRecSubtitle;
 
+    // === 타임스탬프 ===
     @Column(name = "captured_at", nullable = false)
     private Instant capturedAt;
 
@@ -67,7 +66,7 @@ public class Scrap {
     public static Scrap create(
             Long projectId,
             Long userId,
-            byte[] rawHtmlGzip,
+            String rawHtml,
             String subtitle,
             String stage,
             String memo,
@@ -82,7 +81,7 @@ public class Scrap {
         Scrap s = new Scrap();
         s.projectId = projectId;
         s.userId = userId;
-        s.rawHtmlGzip = rawHtmlGzip;
+        s.rawHtml = rawHtml;
         s.subtitle = subtitle;
         s.stage = stage;
         s.memo = memo;
