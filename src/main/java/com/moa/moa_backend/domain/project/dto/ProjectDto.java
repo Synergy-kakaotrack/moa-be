@@ -4,28 +4,29 @@ import com.moa.moa_backend.domain.project.entity.Project;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
-import java.time.Instant;
-
 public class ProjectDto {
 
     private ProjectDto(){}
 
     // 프로젝트 목록
     public record ListItem(
-            Long id,
+            Long projectId,
             String name,
-            String description,
-            Instant updatedAt
+            String description
+//            Instant updatedAt
     ){
         public static ListItem from(Project project){
             return new ListItem(
                     project.getId(),
                     project.getName(),
-                    project.getDescription(),
-                    project.getUpdatedAt()
+                    project.getDescription()
+//                    project.getUpdatedAt()
             );
         }
     }
+    public record ListResponse(
+            java.util.List<ListItem> items
+    ) { }
 
     // 프로젝트 생성 요청
     public record CreateRequest(
@@ -39,19 +40,19 @@ public class ProjectDto {
 
     // 프로젝트 생성 응답
     public record CreateResponse(
-            Long id,
-            String name,
-            String description,
-            Instant createdAt,
-            Instant updatedAt
+            Long projectId
+//            String name,
+//            String description,
+//            Instant createdAt,
+//            Instant updatedAt
     ) {
         public static CreateResponse from(Project project) {
             return new CreateResponse(
-                    project.getId(),
-                    project.getName(),
-                    project.getDescription(),
-                    project.getCreatedAt(),
-                    project.getUpdatedAt()
+                    project.getId()
+//                    project.getName(),
+//                    project.getDescription(),
+//                    project.getCreatedAt(),
+//                    project.getUpdatedAt()
             );
         }
     }
@@ -66,25 +67,25 @@ public class ProjectDto {
     ) { }
 
     public record UpdateResponse(
-            Long id,
-            String name,
-            String description,
-            Instant createdAt,
-            Instant updatedAt
+            Long projectId
+//            String name,
+//            String description,
+//            Instant createdAt,
+//            Instant updatedAt
     ) {
         public static UpdateResponse from(Project project) {
             return new UpdateResponse(
-                    project.getId(),
-                    project.getName(),
-                    project.getDescription(),
-                    project.getCreatedAt(),
-                    project.getUpdatedAt()
+                    project.getId()
+//                    project.getName(),
+//                    project.getDescription(),
+//                    project.getCreatedAt(),
+//                    project.getUpdatedAt()
             );
         }
     }
 
     // 프로젝트 개수 응답
-    public record Count(
+    public record CountResponse(
             long count
     ) { }
 }

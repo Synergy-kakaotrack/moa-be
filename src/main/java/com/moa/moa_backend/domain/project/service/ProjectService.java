@@ -32,14 +32,17 @@ public class ProjectService {
 
     // 프로젝트 목록
     @Transactional(readOnly = true)
-    public List<ProjectDto.ListItem> getProjectList(Long userId) {
+    public ProjectDto.ListResponse getProjectList(Long userId) {
         var sort = Sort.by(Sort.Direction.DESC, "updatedAt");
 
-        return projectRepository.findAllByUserId(userId, sort)
+        var items = projectRepository.findAllByUserId(userId, sort)
                 .stream()
                 .map(ProjectDto.ListItem::from)
                 .toList();
+
+        return new ProjectDto.ListResponse(items);
     }
+
 
     // 프로젝트 개수
     @Transactional(readOnly = true)

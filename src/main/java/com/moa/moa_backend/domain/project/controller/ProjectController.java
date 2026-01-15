@@ -25,17 +25,21 @@ public class ProjectController {
 
     // 프로젝트 목록
     @GetMapping
-    public List<ProjectDto.ListItem> getProjectListByUserId(HttpServletRequest request){
+    public ProjectDto.ListResponse getProjectListByUserId(HttpServletRequest request){
         Long userId = (Long) request.getAttribute("userId");    //UserdFilter가 넣어줄 수 있게.
         return projectService.getProjectList(userId);
     }
 
     // 프로젝트 개수
     @GetMapping("/count")
-    public long getProjectCount(HttpServletRequest request) {
+    public ProjectDto.CountResponse getProjectCount(HttpServletRequest request) {
         Long userId = (Long) request.getAttribute("userId");
-        return projectService.getProjectCount(userId);
+
+        long count = projectService.getProjectCount(userId);
+
+        return new ProjectDto.CountResponse(count);
     }
+
 
     // 프로젝트 생성
     @PostMapping
@@ -49,7 +53,7 @@ public class ProjectController {
 
         // Location 헤더: /api/projects/{id}
         return ResponseEntity
-                .created(URI.create("/api/projects/" + created.id()))
+                .created(URI.create("/api/projects/" + created.projectId()))
                 .body(created);
     }
 
