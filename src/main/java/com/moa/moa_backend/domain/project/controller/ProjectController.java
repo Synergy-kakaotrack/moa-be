@@ -18,11 +18,6 @@ public class ProjectController {
 
     private final ProjectService projectService; // Service 계층의 의존성 주입
 
-//    @GetMapping
-//    public List<ProjectDto.ListItem> getProjectList(){
-//        return projectService.getProjectList();
-//    }
-
     // 프로젝트 목록
     @GetMapping
     public ProjectDto.ListResponse getProjectListByUserId(HttpServletRequest request){

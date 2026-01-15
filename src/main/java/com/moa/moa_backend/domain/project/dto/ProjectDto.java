@@ -13,14 +13,12 @@ public class ProjectDto {
             Long projectId,
             String name,
             String description
-//            Instant updatedAt
     ){
         public static ListItem from(Project project){
             return new ListItem(
                     project.getId(),
                     project.getName(),
                     project.getDescription()
-//                    project.getUpdatedAt()
             );
         }
     }
@@ -41,18 +39,10 @@ public class ProjectDto {
     // 프로젝트 생성 응답
     public record CreateResponse(
             Long projectId
-//            String name,
-//            String description,
-//            Instant createdAt,
-//            Instant updatedAt
     ) {
         public static CreateResponse from(Project project) {
             return new CreateResponse(
                     project.getId()
-//                    project.getName(),
-//                    project.getDescription(),
-//                    project.getCreatedAt(),
-//                    project.getUpdatedAt()
             );
         }
     }
@@ -68,18 +58,10 @@ public class ProjectDto {
 
     public record UpdateResponse(
             Long projectId
-//            String name,
-//            String description,
-//            Instant createdAt,
-//            Instant updatedAt
     ) {
         public static UpdateResponse from(Project project) {
             return new UpdateResponse(
                     project.getId()
-//                    project.getName(),
-//                    project.getDescription(),
-//                    project.getCreatedAt(),
-//                    project.getUpdatedAt()
             );
         }
     }
