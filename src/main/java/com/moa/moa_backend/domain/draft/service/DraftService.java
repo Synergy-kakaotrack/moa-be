@@ -79,8 +79,8 @@ public class DraftService {
         DraftRecommendCommand command = new DraftRecommendCommand(
                 userId,
                 req.contentPlain(),
-                req.sourceCode(),
-                req.sourceUrl(),
+                req.aiSource(),
+                req.aiSourceUrl(),
                 projects,
                 fixedStages,
                 recentContext,
@@ -93,8 +93,8 @@ public class DraftService {
         Draft saved = draftRepository.save(Draft.create(
                 userId,
                 req.contentPlain(),
-                req.sourceCode(),
-                req.sourceUrl(),
+                req.aiSource(),
+                req.aiSourceUrl(),
                 rec.projectId(),
                 rec.stage(),
                 rec.subtitle(),
@@ -192,31 +192,5 @@ public class DraftService {
         // 멱등: 없어도 204
         draftRepository.deleteByIdAndUserId(draftId, userId);
 
-    }
-
-
-    /**
-     * 필수 문자열 필드 검증 및 정규화
-     *
-     * @param v 검증할 값
-     * @param fieldName 필드명 (에러 메시지용)
-     * @return trim된 문자열
-     * @throws ApiException INVALID_REQUEST (400) -> null이거나 공백만 있는 경우
-     */
-    private static String normalizeRequired(String v, String fieldName) {
-        if (v == null) {
-            throw new ApiException(
-                    ErrorCode.INVALID_REQUEST,
-                    fieldName + "은(는) 필수입니다."
-            );
-        }
-        String t = v.trim();
-        if (t.isEmpty()) {
-            throw new ApiException(
-                    ErrorCode.INVALID_REQUEST,
-                    fieldName + "은(는) 빈 문자열일 수 없습니다."
-            );
-        }
-        return t;
     }
 }

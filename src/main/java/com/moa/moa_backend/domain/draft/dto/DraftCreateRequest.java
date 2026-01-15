@@ -4,6 +4,6 @@ import jakarta.validation.constraints.NotBlank;
 
 public record DraftCreateRequest (
     @NotBlank String contentPlain,
-    @NotBlank String sourceCode,
-    @NotBlank String sourceUrl
+    @NotBlank String aiSource,
+    @NotBlank String aiSourceUrl
 ){}

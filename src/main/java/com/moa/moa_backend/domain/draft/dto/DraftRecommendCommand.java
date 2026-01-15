@@ -8,8 +8,8 @@ import java.util.List;
 public record DraftRecommendCommand(
         Long userId,
         String contentPlain,
-        String sourceCode,
-        String sourceUrl,
+        String aiSource,
+        String aiSourceUrl,
 
         List<ProjectOption> projects,
         List<String> fixedStages,
