@@ -17,18 +17,6 @@ import java.net.URI;
 
 /**
  * 드래프트 생성 + LLM 추천
- * 사용 시점: 확장프로그램에서 사용자가 텍스트를 드래그/선택하고 스크랩완료 버튼을 클릭했을 때
- *
- * 요청 데이터:
- * - contentPlain: 스크랩한 텍스트
- * - sourceCode: 코드 블록 (선택)
- * - sourceUrl: 출처 URL
- *
- * 응답 데이터:
- * - draftId: 생성된 Draft ID (나중에 커밋/삭제 시 사용)
- * - recommendation: LLM이 추천한 프로젝트, 단계, 소제목
- * - recMethod: 추천 방식 (RULE_BASED, LLM 등)
- *
  * HTTP 상태:
  * - 201 Created: 성공적으로 Draft 생성 및 추천 완료
  * - Location 헤더에 생성된 리소스 URI 포함
@@ -78,14 +66,6 @@ public class DraftController {
 
     /**
      * 최신 드래프트 조회
-     *
-     * 응답 데이터:
-     * - draftId: Draft ID
-     * - recProjectId: 추천된 프로젝트 ID
-     * - recStage: 추천된 작업 단계
-     * - recSubtitle: 추천된 소제목
-     * - expiredAt: 만료 시각 (프론트에서 타이머 표시 가능)
-     *
      * HTTP 상태:
      * - 200 OK: 유효한 Draft 존재
      * - 404 Not Found: 만료되지 않은 Draft 없음
@@ -106,43 +86,19 @@ public class DraftController {
             }
     )
     @GetMapping("/latest")
-    public DraftLatestResponse latest(
-            @Parameter(
-                    description = "요청 사용자 ID",
-                    required = true,
-                    example = "1"
-            )
+    public ResponseEntity<DraftLatestResponse> latest(
             @RequestHeader("X-User-Id") Long userId
     ) {
-        return draftService.getLatestDraft(userId);
+        return ResponseEntity.ok(draftService.getLatestDraft(userId));
     }
 
 
     /**
      * 드래프트 커밋 (확정하여 실제 Scrap으로 저장)
-     *
-     * 사용 시점:
-     * - 사용자가 추천을 확인/수정하고 "저장" 버튼 클릭 시
-     *
-     * 요청 데이터:
-     * - projectId: 최종 선택한 프로젝트 (LLM 추천 또는 사용자 변경)
-     * - stage: 최종 선택한 단계
-     * - subtitle: 최종 확정한 소제목
-     * - memo: 사용자 메모 (선택)
-     * - rawHtml: 원본 HTML
-     * - aiSource: AI 출처 정보
-     * - aiSourceUrl: AI 출처 URL
-     * - userRecProject: 사용자가 프로젝트를 변경했는가?
-     * - userRecStage: 사용자가 단계를 변경했는가?
-     * - userRecSubtitle: 사용자가 소제목을 변경했는가?
-     *
-     * 응답 데이터:
-     * - scrapId: 생성된 Scrap ID
-     *
      * HTTP 상태:
      * - 201 Created: Scrap 생성 성공, Draft 삭제됨
      * - 404 Not Found: Draft가 없거나 다른 사용자 소유
-     * - 410 Gone: Draft 만료됨 (TODO: 정책 결정 필요)
+     * - 410 Gone: Draft 만료됨
      *
      * 트랜잭션:
      * - Scrap 저장과 Draft 삭제가 원자적으로 처리됨
@@ -182,7 +138,6 @@ public class DraftController {
 
     /**
      * 드래프트 삭제
-
      * HTTP 상태:
      * - 204 No Content: 삭제 성공
      *

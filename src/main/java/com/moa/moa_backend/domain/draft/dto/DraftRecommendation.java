@@ -8,5 +8,5 @@ public record DraftRecommendation (
         String stage,
         String subtitle,
         RecMethod recMethod
-){
+    ){
 }

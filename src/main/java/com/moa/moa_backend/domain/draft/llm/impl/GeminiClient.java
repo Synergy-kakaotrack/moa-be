@@ -42,6 +42,7 @@ public class GeminiClient {
         this.model = model;
         this.timeout = Duration.ofMillis(timeoutMs);
 
+        //JSON 파서 설정 : 알 수 없는 필드 무시 (Gemini 응답에 추가 필드가 있어도 OK)
         this.om = new ObjectMapper()
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
     }
@@ -49,8 +50,10 @@ public class GeminiClient {
     //Adapter가 호출하는 메서드: 입력 -> (Gemini 호출) -> JSON 파싱 결과
     public LlmResult recommend(RecommendInput input) {
         try {
+            //1.프롬프트 생성
             String prompt = buildPrompt(input);
 
+            //2. gemini 호출
             GeminiResponse response = webClient.post()
                     .uri(uriBuilder -> uriBuilder
                             .path("/v1beta/models/{model}:generateContent")
@@ -62,21 +65,24 @@ public class GeminiClient {
                     .bodyToMono(GeminiResponse.class)
                     .block(timeout);
 
+            //3. null체크
             if (response == null) {
                 throw new GeminiClientException("Gemini response is null");
             }
 
+            //4. 텍스트 추출
             String text = extractText(response); // Gemini가 준 텍스트 (우리는 JSON 문자열을 기대)
+            //5. JSON 파싱
             return parseLlmResult(text);
 
         } catch (WebClientResponseException e) {
-            // 4xx/5xx 포함
+            //hTTP 에러(400,500,,,)
             throw new GeminiClientException("Gemini HTTP error: " + e.getStatusCode(), e);
         } catch (GeminiClientException e) {
             // 이미 래핑된 예외는 그대로
             throw e;
         } catch (Exception e) {
-            // 타임아웃/파싱/런타임 등
+            // 기타 모든 예외
             throw new GeminiClientException("Gemini call failed", e);
         }
     }
@@ -93,13 +99,16 @@ public class GeminiClient {
     }
 
     private String extractText(GeminiResponse response) {
+        //1. candidates 배열 체크
         if (response.candidates() == null || response.candidates().isEmpty()) {
             throw new GeminiClientException("Gemini candidates empty");
         }
+        //2. content체[크
         var content = response.candidates().get(0).content();
         if (content == null || content.parts() == null || content.parts().isEmpty()) {
             throw new GeminiClientException("Gemini content/parts empty");
         }
+        //3. text 추출
         String text = content.parts().get(0).text();
         if (text == null || text.isBlank()) {
             throw new GeminiClientException("Gemini text empty");
@@ -107,10 +116,10 @@ public class GeminiClient {
         return text;
     }
 
+    //방어 로직: 첫 { 부터 마지막 } 까지만 추출
     private LlmResult parseLlmResult(String rawText) {
         // Gemini가 JSON만 주도록 프롬프트에 강하게 지시했지만,
-        // 혹시 몰라서 앞뒤 잡텍스트를 제거하는 간단한 방어도 가능.
-        // 여기서는 "첫 { 부터 마지막 }"로 한번 정리.
+        // 혹시 몰라 앞뒤 잡텍스트를 제거
         String json = stripToJsonObject(rawText);
 
         try {
@@ -130,21 +139,24 @@ public class GeminiClient {
     }
 
     private String buildPrompt(RecommendInput input) {
+        //1. projects리스트를 JSON배열 문지열로 반환
         String projectsStr = input.projects().stream()
                 .map(p -> String.format("{\"projectId\":%d,\"title\":\"%s\"}", p.projectId(), escape(p.title())))
                 .collect(Collectors.joining(",", "[", "]"));
 
+        //2. 최근 스크랩 컨텍스트
         String recentStr = (input.recent() == null) ? "null"
                 : String.format("{\"projectId\":%s,\"stage\":\"%s\"}",
                 input.recent().projectId() == null ? "null" : input.recent().projectId().toString(),
                 escape(input.recent().stage())
         );
 
+        //3. 고정된 작업단계 목록
         String fixedStagesStr = input.fixedStages().stream()
                 .map(s -> "\"" + escape(s) + "\"")
                 .collect(Collectors.joining(",", "[", "]"));
 
-        // 핵심: JSON만 출력 + stage는 fixedStages 중 하나 + projectId는 목록에서만 (없으면 null)
+
         return """
                 너는 브라우저 스크랩 저장을 돕는 추천 엔진이다.
                 아래 입력을 참고해서 JSON만 출력하라. (설명/코드블록/추가 텍스트 금지)

@@ -128,7 +128,7 @@ public class DraftService {
         Instant now = Instant.now();
 
         Draft d = draftRepository.findFirstByUserIdAndExpiredAtAfterOrderByCreatedAtDesc(userId, now)
-                .orElseThrow(); // TODO: ApiException(404)
+                .orElseThrow(()-> new ApiException(ErrorCode.DRAFT_NOT_FOUND));
 
         return new DraftLatestResponse(
                 d.getId(),
@@ -182,14 +182,13 @@ public class DraftService {
     }
 
     /**
-     * 드래프트 삭제
+     * 드래프트 삭제 (멱등: 없어도 204)
      *
      * @param userId 사용자 ID
      * @param draftId 삭제할 Draft ID
      */
     @Transactional
     public void deleteDraft(Long userId, Long draftId) {
-        // 멱등: 없어도 204
         draftRepository.deleteByIdAndUserId(draftId, userId);
 
     }
