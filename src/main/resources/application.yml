@@ -1,4 +1,9 @@
 spring:
+  web:
+    error:
+      include-message: always
+      include-exception: true
+      include-stacktrace: on_param
   application:
     name: moa-backend
 
