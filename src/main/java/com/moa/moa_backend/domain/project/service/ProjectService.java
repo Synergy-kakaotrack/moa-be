@@ -43,6 +43,27 @@ public class ProjectService {
     @Transactional
     public ProjectDto.CreateResponse createProject(Long userId, ProjectDto.CreateRequest request) {
 
+        //요청 바디 자체가 없는 경우 : 잘못된 요청
+        if(request == null){
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "잘못된 요청 : 요청 바디가 없습니다.");
+        }
+
+        String name = request.name();
+        //이름은 필수 값이며, 공백만 오는 경우도 허용하지 않음
+        if(name == null || name.trim().isEmpty()){
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "프로젝트 이름은 필수값이다.");
+        }
+        name = name.trim();
+
+        //userId기준 프로젝트 이름 중복 방지
+        if(projectRepository.existsByUserIdAndName(userId, name)){
+            throw new ApiException(ErrorCode.PROJECT_NAME_DUPLICATED);
+        }
+
+        //설명은 선택값. 빈 문자열을 허용하되, 앞뒤 공백은 제거하여 저장
+        String description = request.description();
+        if(description != null) description = description.trim();
+
         Project project = Project.create(
                 userId,
                 request.name(),
