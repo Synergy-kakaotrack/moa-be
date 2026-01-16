@@ -2,6 +2,8 @@ package com.moa.moa_backend.domain.project.controller;
 
 import com.moa.moa_backend.domain.project.dto.ProjectDto;
 import com.moa.moa_backend.domain.project.service.ProjectService;
+import com.moa.moa_backend.global.error.ApiException;
+import com.moa.moa_backend.global.error.ErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -74,5 +76,13 @@ public class ProjectController {
         projectService.deleteProject(userId, projectId);
 
         return ResponseEntity.noContent().build();
+    }
+
+    private Long requireUserId(HttpServletRequest request) {
+        Object obj = request.getAttribute("userId");
+        if(obj instanceof Long userId){
+            return userId;
+        }
+        throw new ApiException(ErrorCode.INVALID_REQUEST,"인증 정보가 없습니다.");
     }
 }
