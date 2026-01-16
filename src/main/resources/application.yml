@@ -78,5 +78,27 @@ logging:
     org.flywaydb: INFO
     org.springframework.boot.autoconfigure: WARN
 
+---
+spring:
+  config:
+    activate:
+      on-profile: ci
+
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/moa}
+    username: ${DB_USERNAME:moa}
+    password: ${DB_PASSWORD:moa-password}
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    locations:
+      - classpath:db/migration
+      - classpath:db/seed/prod
+
+moa:
+  llm:
+    gemini:
+      api-key: ${MOA_LLM_GEMINI_API_KEY:dummy}
 
 
