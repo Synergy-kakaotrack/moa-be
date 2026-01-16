@@ -53,7 +53,7 @@ public class ProjectController {
     // 프로젝트 목록
     @GetMapping
     public ProjectDto.ListResponse getProjectListByUserId(HttpServletRequest request){
-        Long userId = (Long) request.getAttribute("userId");    //UserdFilter가 넣어줄 수 있게.
+        Long userId = requireUserId(request);
         return projectService.getProjectList(userId);
     }
 
@@ -80,7 +80,7 @@ public class ProjectController {
     // 프로젝트 개수
     @GetMapping("/count")
     public ProjectDto.CountResponse getProjectCount(HttpServletRequest request) {
-        Long userId = (Long) request.getAttribute("userId");
+        Long userId = requireUserId(request);
 
         long count = projectService.getProjectCount(userId);
 
@@ -117,7 +117,7 @@ public class ProjectController {
             HttpServletRequest request,
             @Valid @RequestBody ProjectDto.CreateRequest body
     ) {
-        Long userId = (Long) request.getAttribute("userId");
+        Long userId = requireUserId(request);
 
         ProjectDto.CreateResponse created = projectService.createProject(userId, body);
 
@@ -162,7 +162,7 @@ public class ProjectController {
             @PathVariable Long projectId,
             @Valid @RequestBody ProjectDto.UpdateRequest body
     ) {
-        Long userId = (Long) request.getAttribute("userId");
+        Long userId = requireUserId(request);
         return projectService.updateProject(userId, projectId, body);
     }
 
@@ -200,7 +200,7 @@ public class ProjectController {
             HttpServletRequest request,
             @PathVariable Long projectId
     ) {
-        Long userId = (Long) request.getAttribute("userId");
+        Long userId = requireUserId(request);
 
         projectService.deleteProject(userId, projectId);
 
