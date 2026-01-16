@@ -22,6 +22,10 @@ configurations {
 
 repositories {
 	mavenCentral()
+
+	maven {
+		url = uri("https://repository.aspose.com/repo/")
+	}
 }
 
 dependencies {
@@ -33,6 +37,16 @@ dependencies {
 
 	// Boot 4에서 Flyway 자동실행 복구
 	implementation 'org.springframework.boot:spring-boot-starter-flyway'
+
+	// test
+	implementation("com.aspose:aspose-html:20.9.1:jdk16")
+	testImplementation("org.springframework.boot:spring-boot-starter-test")
+	implementation("org.commonmark:commonmark:0.22.0")
+	implementation("org.springframework.boot:spring-boot-starter-thymeleaf")
+	implementation("org.jsoup:jsoup:1.17.2") // 요소의 태그명을 바꾸는 tagName(...) API를 제공
+
+
+
 	//Flyway 10+에서 DB별 모듈이 분리된 케이스 대비 (Postgres)
 	implementation 'org.flywaydb:flyway-database-postgresql'
 	runtimeOnly 'org.postgresql:postgresql'

@@ -1,4 +1,9 @@
 spring:
+  web:
+    error:
+      include-message: always
+      include-exception: true
+      include-stacktrace: on_param
   application:
     name: moa-backend
 
@@ -77,6 +82,7 @@ logging:
   level:
     org.flywaydb: INFO
     org.springframework.boot.autoconfigure: WARN
+
 
 
 
