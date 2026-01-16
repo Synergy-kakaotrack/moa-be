@@ -1,4 +1,9 @@
 spring:
+  web:
+    error:
+      include-message: always
+      include-exception: true
+      include-stacktrace: on_param
   application:
     name: moa-backend
 
@@ -16,6 +21,12 @@ spring:
     enabled: true
     baseline-on-migrate: true
     locations: classpath:db/migration
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
 
 ---
 spring:

@@ -1,0 +1,21 @@
+import com.aspose.html.License;
+import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+
+import java.io.InputStream;
+
+@Configuration
+public class AsposeLicenseConfig {
+
+    @PostConstruct
+    public void setAsposeLicense() {
+        try (InputStream is = new ClassPathResource("Aspose.Total.lic").getInputStream()) {
+            License license = new License();
+            license.setLicense(is);
+        } catch (Exception e) {
+            // NOTE: 평가판/개발환경에서는 라이선스 없이도 동작 확인은 가능.
+            // 필요 시 로그만 남기고 계속 진행.
+        }
+    }
+}
