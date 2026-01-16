@@ -23,6 +23,14 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+moa:
+  llm:
+    gemini:
+      api-key: ${MOA_LLM_GEMINI_API_KEY}
+      model: gemini-2.0-flash
+    timeout-ms: 3000
+
+
 ---
 spring:
   config:
