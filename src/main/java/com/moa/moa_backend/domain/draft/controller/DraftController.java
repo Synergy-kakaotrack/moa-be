@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -55,8 +56,7 @@ public class DraftController {
                     example = "1"
             )
             @RequestHeader("X-User-Id") Long userId,
-
-            @RequestBody DraftCreateRequest request
+            @Valid @RequestBody DraftCreateRequest request
     ) {
         DraftCreateResponse res = draftService.createDraft(userId, request);
         return ResponseEntity
@@ -129,7 +129,7 @@ public class DraftController {
                     required = true,
                     content = @Content(schema = @Schema(implementation = DraftCommitRequest.class))
             )
-            @RequestBody DraftCommitRequest request
+            @Valid @RequestBody DraftCommitRequest request
     ) {
         DraftCommitResponse res = draftService.commit(userId, draftId, request);
         return ResponseEntity.status(201).body(res);
