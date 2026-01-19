@@ -66,7 +66,7 @@ INSERT INTO projects (
 
     ON CONFLICT (project_id) DO NOTHING;
 
--- scraps (project_id=10, stage=설계) - 무한 스크롤/커서 테스트용 (captured_at 내림차순)
+-- scraps (project_id=15, stage=설계) - 무한 스크롤/커서 테스트용 (captured_at 내림차순)
 INSERT INTO scraps (
     scrap_id,
     project_id,
