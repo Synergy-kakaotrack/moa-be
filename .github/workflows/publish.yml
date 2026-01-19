@@ -1,121 +1,116 @@
-name: Publish Image to GHCR
+  name: Publish Image to GHCR
 
-on:
-  workflow_run:
-    workflows: [ "CI" ]
-    types: [ completed ]
+  on:
+    workflow_run:
+      workflows: [ "CI" ]
+      types: [ completed ]
 
-jobs:
-  build-and-push:
-    if: >
-      ${{ github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.head_branch == 'main' }}
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+  jobs:
+    build-and-push:
+      if: >
+        ${{ github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.head_branch == 'main' }}
+      runs-on: ubuntu-latest
+      permissions:
+        contents: read
+        packages: write
 
-    steps:
-      - uses: actions/checkout@v4
+      steps:
+        - uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        - name: Set up Docker Buildx
+          uses: docker/setup-buildx-action@v3
 
-      - name: Login to GHCR
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        - name: Login to GHCR
+          uses: docker/login-action@v3
+          with:
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: true
-          tags: |
-            ghcr.io/synergy-kakaotrack/moa-backend:latest
-            ghcr.io/synergy-kakaotrack/moa-backend:${{ github.sha }}
+        - name: Build and push
+          uses: docker/build-push-action@v6
+          with:
+            context: .
+            push: true
+            tags: |
+              ghcr.io/synergy-kakaotrack/moa-backend:latest
+              ghcr.io/synergy-kakaotrack/moa-backend:${{ github.sha }}
 
-  deploy:
-    needs: build-and-push
-    if: >
-      ${{ github.event.workflow_run.conclusion == 'success' &&
-          github.event.workflow_run.head_branch == 'main' }}
-    runs-on: ubuntu-latest
+    deploy:
+      needs: build-and-push
+      if: >
+        ${{ github.event.workflow_run.conclusion == 'success' &&
+            github.event.workflow_run.head_branch == 'main' }}
+      runs-on: ubuntu-latest
+      permissions:
+        contents: read
 
-    steps:
-      - name: Deploy to EC2 via SSH (env-file)
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            set -e
+      steps:
+        - name: Deploy to EC2 via SSH (env-file)
+          uses: appleboy/ssh-action@v1.0.3
+          with:
+            host: ${{ secrets.EC2_HOST }}
+            username: ${{ secrets.EC2_USER }}
+            key: ${{ secrets.EC2_SSH_KEY }}
+            script: |
+              set -e
+              
+              echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
+              
+              sudo mkdir -p /opt/moa
+              
+              # env 파일 갱신 (Spring이 읽는 용도)
+              sudo tee /opt/moa/moa.env > /dev/null << EOF
+              SPRING_PROFILES_ACTIVE=prod
+              DB_URL=jdbc:postgresql://db:5432/moa
+              DB_USERNAME=moa
+              DB_PASSWORD=${{ secrets.DB_PASSWORD }}
+              MOA_LLM_GEMINI_API_KEY=${{ secrets.MOA_LLM_GEMINI_API_KEY }}
+              EOF
+              sudo chmod 600 /opt/moa/moa.env
+              
+              # docker-compose.yml 갱신 (들여쓰기/변수치환 이슈 제거)
+              sudo tee /opt/moa/docker-compose.yml > /dev/null << EOF
+              services:
+                db:
+                  image: postgres:16
+                  container_name: moa-postgres
+                  restart: unless-stopped
+                  environment:
+                    POSTGRES_DB: moa
+                    POSTGRES_USER: moa
+                    POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
+                    TZ: Asia/Seoul
+                  volumes:
+                    - moa_pgdata:/var/lib/postgresql/data
+                  healthcheck:
+                    test: ["CMD-SHELL", "pg_isready -U moa -d moa"]
+                    interval: 5s
+                    timeout: 3s
+                    retries: 20
+              
+                backend:
+                  image: ghcr.io/synergy-kakaotrack/moa-backend:latest
+                  container_name: moa-backend
+                  restart: unless-stopped
+                  depends_on:
+                    db:
+                      condition: service_healthy
+                  env_file:
+                    - /opt/moa/moa.env
+                  ports:
+                    - "80:8080"
+              
+              volumes:
+                moa_pgdata:
+              EOF
+              
+              cd /opt/moa
+              
+              # EC2에 설치된 docker-compose(하이픈) 사용
+              docker-compose pull
+              docker-compose up -d
+              
+              docker ps --filter "name=moa-"
 
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u "${{ secrets.GHCR_USERNAME }}" --password-stdin
-
-            sudo mkdir -p /opt/moa
-
-            # env 파일 갱신 (Spring이 읽는 용도)
-            sudo tee /opt/moa/moa.env > /dev/null << EOF
-            SPRING_PROFILES_ACTIVE=prod
-            DB_URL=jdbc:postgresql://db:5432/moa
-            DB_USERNAME=moa
-            DB_PASSWORD=${{ secrets.DB_PASSWORD }}
-            MOA_LLM_GEMINI_API_KEY=${{ secrets.MOA_LLM_GEMINI_API_KEY }}
-            EOF
-            sudo chmod 600 /opt/moa/moa.env
-
-            # docker-compose.yml 갱신 (들여쓰기/변수치환 이슈 제거)
-            sudo tee /opt/moa/docker-compose.yml > /dev/null << EOF
-            services:
-              db:
-                image: postgres:16
-                container_name: moa-postgres
-                restart: unless-stopped
-                environment:
-                  POSTGRES_DB: moa
-                  POSTGRES_USER: moa
-                  POSTGRES_PASSWORD: ${{ secrets.DB_PASSWORD }}
-                  TZ: Asia/Seoul
-                volumes:
-                  - moa_pgdata:/var/lib/postgresql/data
-                healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U moa -d moa"]
-                  interval: 5s
-                  timeout: 3s
-                  retries: 20
-                networks:
-                  - moa-net
-
-              backend:
-                image: ghcr.io/synergy-kakaotrack/moa-backend:latest
-                container_name: moa-backend
-                restart: unless-stopped
-                depends_on:
-                  db:
-                    condition: service_healthy
-                env_file:
-                  - /opt/moa/moa.env
-                ports:
-                  - "80:8080"
-                networks:
-                  - moa-net
-
-            volumes:
-              moa_pgdata:
-
-            networks:
-              moa-net:
-                driver: bridge
-            EOF
-
-            cd /opt/moa
-            docker compose pull
-            docker compose up -d
-
-            docker ps --filter "name=moa-"
-
-  
