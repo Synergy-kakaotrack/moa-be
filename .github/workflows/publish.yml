@@ -62,64 +62,6 @@ jobs:
             command -v docker-compose || true
             /usr/local/bin/docker-compose version || true
 
-            # ---- vars (특수문자/달러문자 안전하게 처리) ----
-            GHCR_USERNAME='${{ secrets.GHCR_USERNAME }}'
-            GHCR_TOKEN='${{ secrets.GHCR_TOKEN }}'
-            DB_PASSWORD='${{ secrets.DB_PASSWORD }}'
-            GEMINI_KEY='${{ secrets.MOA_LLM_GEMINI_API_KEY }}'
-
-            # ---- ghcr login ----
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
-
-            sudo mkdir -p /opt/moa
-            sudo chmod 700 /opt/moa
-
-            # ---- env file ----
-            cat <<EOF | sudo tee /opt/moa/moa.env > /dev/null
-            SPRING_PROFILES_ACTIVE=prod
-            DB_URL=jdbc:postgresql://db:5432/moa
-            DB_USERNAME=moa
-            DB_PASSWORD=$DB_PASSWORD
-            MOA_LLM_GEMINI_API_KEY=$GEMINI_KEY
-            EOF
-            sudo chmod 600 /opt/moa/moa.env
-
-            # ---- docker-compose.yml (db + backend) ----
-            cat <<EOF | sudo tee /opt/moa/docker-compose.yml > /dev/null
-            services:
-              db:
-                image: postgres:16
-                container_name: moa-postgres
-                restart: unless-stopped
-                environment:
-                  POSTGRES_DB: moa
-                  POSTGRES_USER: moa
-                  POSTGRES_PASSWORD: $DB_PASSWORD
-                  TZ: Asia/Seoul
-                volumes:
-                  - moa_pgdata:/var/lib/postgresql/data
-                healthcheck:
-                  test: ["CMD-SHELL", "pg_isready -U moa -d moa"]
-                  interval: 5s
-                  timeout: 3s
-                  retries: 20
-
-              backend:
-                image: ghcr.io/synergy-kakaotrack/moa-backend:latest
-                container_name: moa-backend
-                restart: unless-stopped
-                depends_on:
-                  db:
-                    condition: service_healthy
-                env_file:
-                  - /opt/moa/moa.env
-                ports:
-                  - "80:8080"
-
-            volumes:
-              moa_pgdata:
-            EOF
-
             cd /opt/moa
 
             # ---- deploy (PATH 이슈 제거: 절대경로로 실행) ----
