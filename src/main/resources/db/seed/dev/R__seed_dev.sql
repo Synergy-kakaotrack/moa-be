@@ -149,7 +149,7 @@ INSERT INTO scraps (
       )
     ON CONFLICT (scrap_id) DO NOTHING;
 
--- scraps (project_id=7) - recent-context에서 "프로젝트별 최신 1개" 테스트용
+-- scraps (project_id=16) - recent-context에서 "프로젝트별 최신 1개" 테스트용
 INSERT INTO scraps (
     scrap_id,
     project_id,
