@@ -89,6 +89,10 @@ public class ScrapService {
         if (projectId == null || projectId <= 0) {
             throw new ApiException(ErrorCode.INVALID_QUERY_PARAM, "projectId가 올바르지 않습니다.");
         }
+        // Validate project exists and belongs to user
+        if (!projectRepository.existsByIdAndUserId(projectId, userId)) {
+            throw new ApiException(ErrorCode.PROJECT_NOT_FOUND);
+        }
         if (stage == null || stage.isBlank()) {
             throw new ApiException(ErrorCode.INVALID_QUERY_PARAM, "stage가 올바르지 않습니다.");
         }
