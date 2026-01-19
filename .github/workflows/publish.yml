@@ -38,9 +38,9 @@ jobs:
             ghcr.io/synergy-kakaotrack/moa-backend:${{ github.sha }}
 
   deploy:
-    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
     needs: build-and-push
     runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main' }}
 
     steps:
       - name: Configure AWS credentials
@@ -50,7 +50,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ secrets.AWS_REGION }}
 
-      - name: Deploy to EC2 via SSM
+      - name: Deploy to EC2 via SSM (env-file)
         run: |
           aws ssm send-command \
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
@@ -71,3 +71,4 @@ jobs:
               "docker rm -f moa-backend || true",
               "docker run -d --name moa-backend --network moa-net -p 80:8080 --env-file /home/ec2-user/moa/moa.env --restart unless-stopped ghcr.io/synergy-kakaotrack/moa-backend:latest"
             ]'
+  
