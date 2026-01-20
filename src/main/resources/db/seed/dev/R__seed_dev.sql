@@ -147,7 +147,7 @@ INSERT INTO scraps (
           false,
           NOW() - INTERVAL '1 days'
       ),
-      (
+      (-- 원문이 길고 복잡한 경우: contentFormat="MARKDOWN" 기대
           504,
           15,
           1,
@@ -267,7 +267,7 @@ INSERT INTO scraps (
           true,
           NOW() - INTERVAL '4 days'
       ),
-      (-- 짧아서 변환되지 않을 때 "contentFormat": "HTML"로 표기하는지 테스트
+      (-- 짧아서 HTML로 판별 실패(변환 안 함): contentFormat="HTML" 기대
           505,
           15,
           1,
@@ -277,6 +277,38 @@ INSERT INTO scraps (
           'user_id + project_id + stage + captured_at 조합',
           'GPT',
           'https://example.com/db',
+          'NONE',
+          false,
+          false,
+          false,
+          NOW() - INTERVAL '1 days'
+      ),
+      (-- raw_html이 NULL인 경우: contentFormat="NULL" 기대
+          506,
+          15,
+          1,
+          '',
+          'NULL 케이스 테스트',
+          '설계',
+          'raw_html이 NULL이면 contentFormat은 NULL로 내려가야 함',
+          'GPT',
+          'https://example.com/null',
+          'NONE',
+          false,
+          false,
+          false,
+          NOW() - INTERVAL '1 days'
+      ),
+      (-- 변환 중 예외 강제 발생(테스트 훅 사용): contentFormat="FAIL" 기대
+          507,
+          15,
+          1,
+          '<h1>FAIL Test</h1><!--FORCE_FAIL--><p>Hello <b>World</b></p>',
+          'FAIL 케이스 테스트',
+          '설계',
+          '강제 실패 마커로 예외 발생 시 contentFormat은 FAIL로 내려가야 함',
+          'GPT',
+          'https://example.com/fail',
           'NONE',
           false,
           false,
