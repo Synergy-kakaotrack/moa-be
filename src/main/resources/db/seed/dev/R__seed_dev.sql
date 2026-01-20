@@ -146,6 +146,126 @@ INSERT INTO scraps (
           false,
           false,
           NOW() - INTERVAL '1 days'
+      ),
+      (
+          504,
+          15,
+          1,
+          '<h1>Mega HTML Test</h1>
+
+                    <p>
+                      Hello <b>World</b>!! <i>Italic</i>, <strong>Strong</strong>, <em>Em</em>,
+                      <code>inline_code()</code>, entities: &lt; &gt; &amp; &quot; &#39; &nbsp;
+                    </p>
+
+                    <p>Line1<br>Line2<br/>Line3</p>
+
+                    <hr>
+
+                    <h2>Links & Images</h2>
+                    <p>Link: <a href="https://example.com?q=1&ref=raw_html">Example</a></p>
+                    <figure>
+                      <img src="https://example.com/image.png" alt="sample image" loading="lazy" width="240">
+                      <figcaption>Caption with <b>bold</b> text</figcaption>
+                    </figure>
+
+                    <h2>Lists</h2>
+                    <ul>
+                      <li>A</li>
+                      <li>B
+                        <ul>
+                          <li>B-1</li>
+                          <li>B-2 <a href="https://example.com/b2">link</a></li>
+                        </ul>
+                      </li>
+                      <li><input type="checkbox" checked> Done item</li>
+                      <li><input type="checkbox"> Todo item</li>
+                    </ul>
+
+                    <ol>
+                      <li>First</li>
+                      <li>Second
+                        <ol>
+                          <li>Second-1</li>
+                          <li>Second-2</li>
+                        </ol>
+                      </li>
+                    </ol>
+
+                    <h2>Quote</h2>
+                    <blockquote>
+                      <p>Quote level 1</p>
+                      <blockquote>
+                        <p>Quote level 2 with <strong>bold</strong> and <code>code</code></p>
+                      </blockquote>
+                      <p>Back to level 1</p>
+                    </blockquote>
+
+                    <h2>Code Blocks</h2>
+                    <pre><code class="language-java">
+                    public class Hello {
+                      public static void main(String[] args) {
+                        System.out.println("Hello");
+                      }
+                    }
+                    </code></pre>
+
+                    <pre>
+                    SELECT * FROM scraps WHERE user_id = 1 ORDER BY captured_at DESC;
+                    </pre>
+
+                    <h2>Table</h2>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th align="left">Name</th>
+                          <th align="center">Score</th>
+                          <th align="right">Note</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr>
+                          <td>Alice</td>
+                          <td align="center"><b>95</b></td>
+                          <td align="right">Excellent</td>
+                        </tr>
+                        <tr>
+                          <td>Bob</td>
+                          <td align="center">82</td>
+                          <td align="right"><i>Good</i></td>
+                        </tr>
+                      </tbody>
+                    </table>
+
+                    <h2>Extra Tags</h2>
+                    <dl>
+                      <dt>API</dt>
+                      <dd>Application Programming Interface</dd>
+                    </dl>
+
+                    <p><abbr title="As Soon As Possible">ASAP</abbr> please.</p>
+                    <p>H<sub>2</sub>O and x<sup>2</sup> + y<sup>2</sup></p>
+
+                    <details>
+                      <summary>Expandable section</summary>
+                      <p>Hidden content with <span style="color:red; font-weight:bold;">styled text</span>.</p>
+                    </details>
+
+                    <h2>Broken Fragment</h2>
+                    <p>Unclosed tags <b>bold <i>italic</p>
+                    <div>Nested <span>span without closing
+                    <p>Another paragraph
+                    ',
+          'API 설계 초안',
+          '설계',
+          NULL,
+          'GPT',
+          'https://example.com',
+          'LLM',
+          true,
+          false,
+          true,
+          NOW() - INTERVAL '4 days'
       )
     ON CONFLICT (scrap_id) DO NOTHING;
 

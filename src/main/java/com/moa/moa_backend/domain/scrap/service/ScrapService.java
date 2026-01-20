@@ -9,6 +9,7 @@ import com.moa.moa_backend.domain.scrap.dto.ScrapListResponse;
 import com.moa.moa_backend.domain.scrap.dto.ScrapRecentContextResponse;
 import com.moa.moa_backend.domain.scrap.entity.Scrap;
 import com.moa.moa_backend.domain.scrap.repository.ScrapRepository;
+import com.moa.moa_backend.domain.scrap.service.MarkdownConvertService;
 import com.moa.moa_backend.global.error.ApiException;
 import com.moa.moa_backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class ScrapService {
 
     private final ScrapRepository scrapRepository;
     private final ProjectRepository projectRepository;
+    private final MarkdownConvertService markdownConvertService;
 
     // =========================
     // Create (Draft commit -> Scrap)
@@ -86,6 +88,9 @@ public class ScrapService {
             String cursor,
             Integer limit
     ) {
+        if (!projectRepository.existsByIdAndUserId(projectId, userId)) {
+            throw new ApiException(ErrorCode.PROJECT_NOT_FOUND);
+        }
         if (projectId == null || projectId <= 0) {
             throw new ApiException(ErrorCode.INVALID_QUERY_PARAM, "projectId가 올바르지 않습니다.");
         }
@@ -163,13 +168,15 @@ public class ScrapService {
         Scrap s = scrapRepository.findByIdAndUserId(scrapId, userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SCRAP_NOT_FOUND));
 
+        String exportedContent = markdownConvertService.toMarkdownIfHtml(s.getRawHtml());
+
         return new ScrapDetailResponse(
                 s.getId(),
                 s.getProjectId(),
                 s.getStage(),
                 s.getSubtitle(),
                 s.getMemo(),
-                s.getRawHtml(),
+                exportedContent, // HTML이면, Markdown으로 변환된 결과
                 s.getAiSource(),
                 s.getAiSourceUrl(),
                 s.getCapturedAt()
