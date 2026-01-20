@@ -266,6 +266,22 @@ INSERT INTO scraps (
           false,
           true,
           NOW() - INTERVAL '4 days'
+      ),
+      (-- 짧아서 변환되지 않을 때 "contentFormat": "HTML"로 표기하는지 테스트
+          505,
+          15,
+          1,
+          '<h2>D',
+          'DB 인덱스 메모',
+          '설계',
+          'user_id + project_id + stage + captured_at 조합',
+          'GPT',
+          'https://example.com/db',
+          'NONE',
+          false,
+          false,
+          false,
+          NOW() - INTERVAL '1 days'
       )
     ON CONFLICT (scrap_id) DO NOTHING;
 

@@ -168,7 +168,7 @@ public class ScrapService {
         Scrap s = scrapRepository.findByIdAndUserId(scrapId, userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SCRAP_NOT_FOUND));
 
-        String exportedContent = markdownConvertService.toMarkdownIfHtml(s.getRawHtml());
+        MarkdownConvertService.ConvertResult result = markdownConvertService.convert(s.getRawHtml());
 
         return new ScrapDetailResponse(
                 s.getId(),
@@ -176,7 +176,8 @@ public class ScrapService {
                 s.getStage(),
                 s.getSubtitle(),
                 s.getMemo(),
-                exportedContent, // HTML이면, Markdown으로 변환된 결과
+                result.content(),
+                result.contentFormat(),
                 s.getAiSource(),
                 s.getAiSourceUrl(),
                 s.getCapturedAt()

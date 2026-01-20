@@ -9,13 +9,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class MarkdownConvertService {
 
-    // NOTE: HTML 태그 여부를 빠르게 거르는 최소 길이 (너무 짧은 문자열의 오탐을 줄임)
     private static final int MIN_HTML_HINT_LENGTH = 6;
 
     private final FlexmarkHtmlConverter flexmarkHtmlConverter;
 
     public MarkdownConvertService() {
-        // NOTE: 필요 시 옵션(헤딩 스타일, 리스트 처리 등)을 여기서 일괄 적용 가능
         MutableDataSet options = new MutableDataSet();
 
         // NOTE: h1/h2를 Setext(====/----)가 아니라 ATX(#/##)로 출력
@@ -24,53 +22,51 @@ public class MarkdownConvertService {
         this.flexmarkHtmlConverter = FlexmarkHtmlConverter.builder(options).build();
     }
 
-    public String toMarkdownIfHtml(String rawHtml) {
+    public ConvertResult convert(String rawHtml) {
         if (rawHtml == null) {
-            return null;
+            return new ConvertResult(null, "HTML");
         }
 
         String trimmed = rawHtml.trim();
         if (trimmed.isEmpty()) {
-            return rawHtml;
+            return new ConvertResult(rawHtml, "HTML");
         }
 
         try {
-            //HTML형식인지 판별 후 html아니면 원본 그대로 반환
+            // NOTE: HTML이 아니면 변환하지 않고 원문 반환 (format=HTML)
             if (!isLikelyHtml(trimmed)) {
-                return rawHtml;
+                return new ConvertResult(rawHtml, "HTML");
             }
 
-            //Jsoup으로 HTML 정규화 (불완전한 태그 보정, 공백 정리 등)
             String normalizedHtml = normalizeHtmlFragment(trimmed);
-            //Flexmark 라이브러리를 사용해 HTML -> Markdown 변환
             String markdown = flexmarkHtmlConverter.convert(normalizedHtml);
 
-            //변환 결과가 null이면 원본 반환
             if (markdown == null) {
-                return rawHtml;
+                return new ConvertResult(rawHtml, "HTML");
             }
 
-            //변환된 Markdown이 비어있으면 원본 반환, 아니면 반환 결과 반환
             String markdownTrimmed = markdown.trim();
-            return markdownTrimmed.isEmpty() ? rawHtml : markdownTrimmed;
+            if (markdownTrimmed.isEmpty()) {
+                return new ConvertResult(rawHtml, "HTML");
+            }
+
+            return new ConvertResult(markdownTrimmed, "MARKDOWN");
         } catch (RuntimeException ex) {
-            // HTML 판별, 파싱, 변환 중 예상치 못한 에러 발생 시
-            // API 안정성을 위해 원본 rawHtml을 그대로 반환
-            return rawHtml;
+            return new ConvertResult(rawHtml, "HTML");
         }
     }
+
+    public record ConvertResult(String content, String contentFormat) {}
 
     private static boolean isLikelyHtml(String text) {
         if (text.length() < MIN_HTML_HINT_LENGTH) {
             return false;
         }
 
-        // NOTE: '<' 또는 '>'가 아예 없으면 HTML로 보기 어려움
         if (text.indexOf('<') < 0 || text.indexOf('>') < 0) {
             return false;
         }
 
-        // NOTE: Jsoup 파싱 결과로 실제 Element가 존재하는지 확인
         Document doc = Jsoup.parseBodyFragment(text);
         return doc.body() != null && doc.body().getAllElements().size() > 1;
     }
@@ -78,7 +74,6 @@ public class MarkdownConvertService {
     private static String normalizeHtmlFragment(String html) {
         Document doc = Jsoup.parseBodyFragment(html);
 
-        // NOTE: prettyPrint를 끄면 불필요한 줄바꿈/들여쓰기 삽입을 줄임
         Document.OutputSettings outputSettings = new Document.OutputSettings();
         outputSettings.prettyPrint(false);
         doc.outputSettings(outputSettings);

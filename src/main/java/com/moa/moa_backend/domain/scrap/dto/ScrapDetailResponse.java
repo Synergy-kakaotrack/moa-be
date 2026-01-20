@@ -8,7 +8,8 @@ public record ScrapDetailResponse(
         String stage,
         String subtitle,
         String memo,
-        String rawHtml,
+        String content,
+        String contentFormat, // "MARKDOWN" | "HTML"
         String aiSource,
         String aiSourceUrl,
         Instant capturedAt
