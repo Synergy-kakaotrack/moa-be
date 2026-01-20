@@ -34,19 +34,30 @@ public class MarkdownConvertService {
             return rawHtml;
         }
 
-        if (!isLikelyHtml(trimmed)) {
+        try {
+            //HTML형식인지 판별 후 html아니면 원본 그대로 반환
+            if (!isLikelyHtml(trimmed)) {
+                return rawHtml;
+            }
+
+            //Jsoup으로 HTML 정규화 (불완전한 태그 보정, 공백 정리 등)
+            String normalizedHtml = normalizeHtmlFragment(trimmed);
+            //Flexmark 라이브러리를 사용해 HTML -> Markdown 변환
+            String markdown = flexmarkHtmlConverter.convert(normalizedHtml);
+
+            //변환 결과가 null이면 원본 반환
+            if (markdown == null) {
+                return rawHtml;
+            }
+
+            //변환된 Markdown이 비어있으면 원본 반환, 아니면 반환 결과 반환
+            String markdownTrimmed = markdown.trim();
+            return markdownTrimmed.isEmpty() ? rawHtml : markdownTrimmed;
+        } catch (RuntimeException ex) {
+            // HTML 판별, 파싱, 변환 중 예상치 못한 에러 발생 시
+            // API 안정성을 위해 원본 rawHtml을 그대로 반환
             return rawHtml;
         }
-
-        String normalizedHtml = normalizeHtmlFragment(trimmed);
-        String markdown = flexmarkHtmlConverter.convert(normalizedHtml);
-
-        if (markdown == null) {
-            return rawHtml;
-        }
-
-        String markdownTrimmed = markdown.trim();
-        return markdownTrimmed.isEmpty() ? rawHtml : markdownTrimmed;
     }
 
     private static boolean isLikelyHtml(String text) {
