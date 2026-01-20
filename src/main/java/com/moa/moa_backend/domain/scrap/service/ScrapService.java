@@ -9,6 +9,7 @@ import com.moa.moa_backend.domain.scrap.dto.ScrapListResponse;
 import com.moa.moa_backend.domain.scrap.dto.ScrapRecentContextResponse;
 import com.moa.moa_backend.domain.scrap.entity.Scrap;
 import com.moa.moa_backend.domain.scrap.repository.ScrapRepository;
+import com.moa.moa_backend.domain.scrap.service.MarkdownConvertService;
 import com.moa.moa_backend.global.error.ApiException;
 import com.moa.moa_backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class ScrapService {
 
     private final ScrapRepository scrapRepository;
     private final ProjectRepository projectRepository;
+    private final MarkdownConvertService markdownConvertService;
 
     // =========================
     // Create (Draft commit -> Scrap)
@@ -110,6 +112,10 @@ public class ScrapService {
         if (decoded == null) {
             // cursor 없음: 첫 페이지 쿼리 (NULL 파라미터 자체가 없음 → PG 타입 에러 방지)
             rows = scrapRepository.findFirstPage(userId, projectId, stage, pageable);
+
+            if (rows.isEmpty()) {
+                throw new ApiException(ErrorCode.SCRAP_NOT_FOUND);
+            }
         } else {
             Instant lastCapturedAt = decoded.lastCapturedAt();
             Long lastScrapId = decoded.lastScrapId();
@@ -163,13 +169,16 @@ public class ScrapService {
         Scrap s = scrapRepository.findByIdAndUserId(scrapId, userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.SCRAP_NOT_FOUND));
 
+        MarkdownConvertService.ConvertResult result = markdownConvertService.convert(userId, scrapId, s.getRawHtml());
+
         return new ScrapDetailResponse(
                 s.getId(),
                 s.getProjectId(),
                 s.getStage(),
                 s.getSubtitle(),
                 s.getMemo(),
-                s.getRawHtml(),
+                result.content(),
+                result.contentFormat(),
                 s.getAiSource(),
                 s.getAiSourceUrl(),
                 s.getCapturedAt()

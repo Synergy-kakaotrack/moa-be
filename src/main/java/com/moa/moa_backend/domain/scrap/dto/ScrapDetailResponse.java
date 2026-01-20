@@ -8,8 +8,16 @@ public record ScrapDetailResponse(
         String stage,
         String subtitle,
         String memo,
-        String rawHtml,
+        String content,
+        ContentFormat contentFormat, // "MARKDOWN" | "HTML"
         String aiSource,
         String aiSourceUrl,
         Instant capturedAt
-) {}
+) {
+    public enum ContentFormat {
+    NULL,
+    HTML,
+    MARKDOWN,
+    FAIL
+    }
+}
