@@ -9,8 +9,15 @@ public record ScrapDetailResponse(
         String subtitle,
         String memo,
         String content,
-        String contentFormat, // "MARKDOWN" | "HTML"
+        ContentFormat contentFormat, // "MARKDOWN" | "HTML"
         String aiSource,
         String aiSourceUrl,
         Instant capturedAt
-) {}
+) {
+    public enum ContentFormat {
+    NULL,
+    HTML,
+    MARKDOWN,
+    FAIL
+    }
+}
