@@ -112,6 +112,10 @@ public class ScrapService {
         if (decoded == null) {
             // cursor 없음: 첫 페이지 쿼리 (NULL 파라미터 자체가 없음 → PG 타입 에러 방지)
             rows = scrapRepository.findFirstPage(userId, projectId, stage, pageable);
+
+            if (rows.isEmpty()) {
+                throw new ApiException(ErrorCode.SCRAP_NOT_FOUND);
+            }
         } else {
             Instant lastCapturedAt = decoded.lastCapturedAt();
             Long lastScrapId = decoded.lastScrapId();
