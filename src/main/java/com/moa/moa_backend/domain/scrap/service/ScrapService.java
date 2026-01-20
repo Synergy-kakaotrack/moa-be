@@ -88,9 +88,6 @@ public class ScrapService {
             String cursor,
             Integer limit
     ) {
-        if (!projectRepository.existsByIdAndUserId(projectId, userId)) {
-            throw new ApiException(ErrorCode.PROJECT_NOT_FOUND);
-        }
         if (projectId == null || projectId <= 0) {
             throw new ApiException(ErrorCode.INVALID_QUERY_PARAM, "projectId가 올바르지 않습니다.");
         }
