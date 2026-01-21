@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration scan="false">
+
+    <!-- ========================= -->
+    <!-- 1. 기본 콘솔 Appender -->
+    <!-- (라이브러리 / 부트 로그) -->
+    <!-- ========================= -->
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- ========================= -->
+    <!-- 2. 요청 로그 전용 Appender -->
+    <!-- (RequestLoggingFilter) -->
+    <!-- ========================= -->
+    <appender name="REQ_OUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>
+                %d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg%n
+            </pattern>
+        </encoder>
+    </appender>
+
+    <!-- ========================= -->
+    <!-- 3. 요청 로그 전용 Logger -->
+    <!-- ========================= -->
+    <logger name="REQUEST" level="INFO" additivity="false">
+        <appender-ref ref="REQ_OUT"/>
+    </logger>
+
+    <!-- ========================= -->
+    <!-- 4. Root Logger -->
+    <!-- ========================= -->
+    <root level="INFO">
+        <appender-ref ref="STDOUT"/>
+    </root>
+
+</configuration>
