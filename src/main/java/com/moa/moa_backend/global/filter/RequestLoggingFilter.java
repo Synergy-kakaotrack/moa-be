@@ -15,7 +15,7 @@ import java.io.IOException;
 
 @Component
 public class RequestLoggingFilter extends OncePerRequestFilter {
-    private static final Logger log = LoggerFactory.getLogger(RequestLoggingFilter.class);
+    private static final Logger log = LoggerFactory.getLogger("REQUEST");
 
 
     @Override
