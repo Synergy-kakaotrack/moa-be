@@ -10,6 +10,9 @@ public enum ErrorCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "REQ_003", "요청 값이 올바르지 않습니다."),
     INVALID_QUERY_PARAM(HttpStatus.BAD_REQUEST, "REQ_004", "쿼리 파라미터가 올바르지 않습니다."),
 
+    // Not Found (generic)
+    NOT_FOUND(HttpStatus.NOT_FOUND, "REQ_404", "요청한 리소스를 찾을 수 없습니다."),
+
     //User (MVP: X-User-Id)
     USER_NOT_FOUND(HttpStatus.NOT_FOUND, "USR_404", "사용자를 찾을 수 없습니다."),
 
