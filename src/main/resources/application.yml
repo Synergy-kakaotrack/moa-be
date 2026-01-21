@@ -23,9 +23,6 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
-logging:
-  pattern :
-    console : "%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %logger{36} - %msg [userId=%X{userId} error=%X{errorCode}]%n"
 
 moa:
   llm:
