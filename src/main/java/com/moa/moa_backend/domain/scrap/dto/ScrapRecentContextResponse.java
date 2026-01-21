@@ -9,6 +9,7 @@ public record ScrapRecentContextResponse(
     public record Item(
             Long projectId,
             String projectName,
+            String projectDescription,
             String lastStage,
             Instant lastCapturedAt
     ) {}
