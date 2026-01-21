@@ -2,6 +2,8 @@ package com.moa.moa_backend.global.error;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +65,32 @@ public class GlobalExceptionHandler {
                         fieldErrors
                 ));
     }
+
+    /**
+     * 정적 리소스 못 찾음
+     * /SDK/webLanguage 같은 경로로 들어왔는데 static에 파일이 없을 때
+     */
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> handleNoResourceFound(
+            NoResourceFoundException e,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = ErrorCode.NOT_FOUND;
+        MDC.put("errorCode", errorCode.code());
+
+        log.warn("리소스를 찾을 수 없음. path={}", request.getRequestURI());
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(
+                        errorCode.code(),
+                        errorCode.message(),
+                        request.getRequestURI(),
+                        Instant.now(),
+                        null
+                ));
+    }
+
 
     /**
      * 그 외 모든 예외 (예상 못한 오류)
