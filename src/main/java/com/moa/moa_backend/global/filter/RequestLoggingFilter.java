@@ -20,6 +20,8 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request){
+        if("OPTIOINS".equalsIgnoreCase(request.getMethod())){return true;}
+
         String path = request.getRequestURI();
         return path.startsWith("/v3/api-docs")
                 || path.startsWith("/swagger-ui")
@@ -32,10 +34,11 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         long start = System.currentTimeMillis();
 
-        String userId = req.getHeader("X-User-Id");
-        if(userId == null || userId.isBlank())
-            userId = "anonymous";
+        //userId 최소검증
+        String raw = req.getHeader("X-User-Id");
+        String userId = (raw != null && raw.matches("\\d{1,10}")) ? raw : "anonymous";
         MDC.put("userId", userId);
+
 
         String method = req.getMethod();
         String path = req.getRequestURI();
