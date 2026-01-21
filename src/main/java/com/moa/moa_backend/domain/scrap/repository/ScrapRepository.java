@@ -64,17 +64,21 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
     @Query(value = """
         select x.project_id   as projectId,
                x.project_name as projectName,
+               x.project_description as projectDescription,
                x.stage        as lastStage,
                x.captured_at  as lastCapturedAt
         from (
             select distinct on (s.project_id)
                    s.project_id,
                    p.project_name,
+                   p.project_description,
                    s.stage,
                    s.captured_at,
                    s.scrap_id
             from scraps s
-            join projects p on p.project_id = s.project_id
+            join projects p
+              on p.project_id = s.project_id
+             and p.user_id    = s.user_id
             where s.user_id = :userId
             order by s.project_id, s.captured_at desc, s.scrap_id desc
         ) x
@@ -86,6 +90,7 @@ public interface ScrapRepository extends JpaRepository<Scrap, Long> {
     interface RecentContextRow {
         Long getProjectId();
         String getProjectName();
+        String getProjectDescription();
         String getLastStage();
         Instant getLastCapturedAt();
     }

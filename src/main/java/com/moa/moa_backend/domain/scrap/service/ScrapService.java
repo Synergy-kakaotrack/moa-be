@@ -195,6 +195,7 @@ public class ScrapService {
                         .map(r -> new ScrapRecentContextResponse.Item(
                                 r.getProjectId(),
                                 r.getProjectName(),
+                                r.getProjectDescription(),
                                 r.getLastStage(),
                                 r.getLastCapturedAt()
                         ))
