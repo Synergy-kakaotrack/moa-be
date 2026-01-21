@@ -3,6 +3,7 @@ package com.moa.moa_backend.global.error;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -20,6 +21,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ErrorResponse> handleException(ApiException e, HttpServletRequest request) {
         ErrorCode errorCode = e.getErrorCode();
+
+        //요청 로깅 필터에서 에러코드를 같이 찍게 하기 위해
+        MDC.put("errorCode", errorCode.code());
 
         return ResponseEntity
                 .status(errorCode.httpStatus())
@@ -47,6 +51,8 @@ public class GlobalExceptionHandler {
 
         ErrorCode errorCode = ErrorCode.INVALID_REQUEST;
 
+        MDC.put("errorCode", errorCode.code());
+
         return ResponseEntity
                 .status(errorCode.httpStatus())
                 .body(new ErrorResponse(
@@ -66,10 +72,10 @@ public class GlobalExceptionHandler {
             Exception e,
             HttpServletRequest request
     ) {
-
-
-        log.error("예기치 못한 에러 발생. path={}", request.getRequestURI(),e);
         ErrorCode errorCode = ErrorCode.INTERNAL_ERROR;
+        MDC.put("errorCode", errorCode.code());
+        log.error("예기치 못한 에러 발생. path={}", request.getRequestURI(),e);
+
 
         return ResponseEntity
                 .status(errorCode.httpStatus())

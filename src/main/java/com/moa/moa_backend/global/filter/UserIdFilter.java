@@ -22,6 +22,11 @@ public class UserIdFilter extends OncePerRequestFilter {
     }
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        return "OPTIONS".equalsIgnoreCase(request.getMethod());
+    }
+
+    @Override
     protected void doFilterInternal(
             HttpServletRequest request,
             HttpServletResponse response,
@@ -33,7 +38,7 @@ public class UserIdFilter extends OncePerRequestFilter {
         if(userIdHeader == null || userIdHeader.isEmpty()) {
             throw new ApiException(ErrorCode.REQUIRED_HEADER_MISSING);
         }
-        //todo : 숫자 파싱
+        //숫자 파싱
         Long userId;
         try {
             userId = Long.parseLong(userIdHeader);
@@ -41,7 +46,7 @@ public class UserIdFilter extends OncePerRequestFilter {
             throw new ApiException(ErrorCode.INVALID_HEADER_VALUE);
         }
 
-        //todo : userId > 0
+        //userId > 0
         if(userId <= 0) {
             throw new ApiException(ErrorCode.INVALID_HEADER_VALUE);
         }
@@ -50,10 +55,10 @@ public class UserIdFilter extends OncePerRequestFilter {
             throw new ApiException(ErrorCode.USER_NOT_FOUND);
         }
 
-        //todo : request에 저장
+        //request에 저장
         request.setAttribute(USER_ID_ATTRIBUTE, userId);
 
-        //todo : 다음 필터 혹은 컨트롤러로 전달
+        //다음 필터 혹은 컨트롤러로 전달
         filterChain.doFilter(request, response);
     }
 

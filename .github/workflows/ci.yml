@@ -1,0 +1,46 @@
+name: CI
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+jobs:
+  test-with-postgres:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: moa
+          POSTGRES_USER: moa
+          POSTGRES_PASSWORD: moa-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U moa -d moa"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x ./gradlew
+
+      - name: Run tests (CI profile + Postgres + Flyway)
+        env:
+          SPRING_PROFILES_ACTIVE: ci
+          DB_URL: jdbc:postgresql://localhost:5432/moa
+          DB_USERNAME: moa
+          DB_PASSWORD: moa-password
+          MOA_LLM_GEMINI_API_KEY: dummy
+        run: ./gradlew test
