@@ -77,7 +77,15 @@ public class GeminiLlmAdapter implements LlmRecommendationPort {
             );
         }
 
-        return new GeminiClient.RecommendInput(projects, recent, command.fixedStages());
+        return new GeminiClient.RecommendInput(
+                command.contentPlain(),
+                command.aiSource(),
+                command.aiSourceUrl(),
+                projects,
+                recent,
+                command.fixedStages()
+        );
+
     }
 
     //-----프로젝트 ID 검증---------
