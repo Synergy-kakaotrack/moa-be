@@ -156,25 +156,42 @@ public class GeminiClient {
                 .map(s -> "\"" + escape(s) + "\"")
                 .collect(Collectors.joining(",", "[", "]"));
 
+        String scrapText = limit(input.contentPlain(), 2000);
+        String url = input.aiSourceUrl() == null ? "" : input.aiSourceUrl();
+        String source = input.aiSource() == null ? "" : input.aiSource();
+
 
         return """
                 너는 브라우저 스크랩 저장을 돕는 추천 엔진이다.
                 아래 입력을 참고해서 JSON만 출력하라. (설명/코드블록/추가 텍스트 금지)
-
+                
+                목표:
+                - scrapText의 주제/행동을 근거로 stage와 subtitle을 추천한다.
+                
                 제약:
                 - stage는 반드시 fixedStages 중 하나여야 한다.
                 - projectId는 projects 목록에 있는 값만 선택할 수 있다.
                 - 적절한 프로젝트가 없다면 projectId는 null로 둬라.
-                - subtitle은 짧은 한 줄(선택). 없으면 null.
-
+                - subtitle은 scrapText를 15~25자 내로 요약해라. **가능하면 null을 쓰지 마라.**
+                
                 입력:
                 projects=%s
                 recentContext=%s
                 fixedStages=%s
+                aiSource=%s
+                aiSourceUrl=%s
+                scrapText=%s
 
                 출력(JSON만):
                 {"projectId": number|null, "stage": string, "subtitle": string|null}
-                """.formatted(projectsStr, recentStr, fixedStagesStr);
+                """.formatted(
+                projectsStr,
+                recentStr,
+                fixedStagesStr,
+                jsonString(source),
+                jsonString(url),
+                jsonString(scrapText)
+        );
     }
 
     private String escape(String s) {
@@ -185,16 +202,32 @@ public class GeminiClient {
     // ----- LLM용 입력/출력 DTO -----
 
     public record RecommendInput(
+            String contentPlain,
+            String aiSource,
+            String aiSourceUrl,
             List<ProjectItem> projects,
             RecentContext recent,
             List<String> fixedStages
     ) {}
+
 
     public record ProjectItem(Long projectId, String title) {}
 
     public record RecentContext(Long projectId, String stage) {}
 
     public record LlmResult(Long projectId, String stage, String subtitle) {}
+
+    private String limit(String s, int max) {
+        if (s == null) return "";
+        s = s.strip();
+        return s.length() <= max ? s : s.substring(0, max);
+    }
+
+    private String jsonString(String s) {
+        if (s == null) s = "";
+        return "\"" + escape(s) + "\"";
+    }
+
 }
 
 
