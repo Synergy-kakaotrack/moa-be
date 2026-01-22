@@ -5,6 +5,7 @@ import com.moa.moa_backend.domain.draft.dto.DraftRecommendation;
 import com.moa.moa_backend.domain.draft.entity.DraftStage;
 import com.moa.moa_backend.domain.draft.entity.RecMethod;
 import com.moa.moa_backend.domain.draft.llm.LlmRecommendationPort;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
@@ -15,6 +16,7 @@ import java.util.stream.Collectors;
 /**
  * Gemini 결과를 정책대로 정규화하고, 실패 시 휴리스틱으로 폴백한다.
  */
+@Slf4j
 @Primary
 @Component
 public class GeminiLlmAdapter implements LlmRecommendationPort {
@@ -56,6 +58,8 @@ public class GeminiLlmAdapter implements LlmRecommendationPort {
             );
 
         } catch (GeminiClientException e) {
+            log.warn("[LLM] failed -> fallback. reason={}", e.getMessage(), e);
+
             // LLM 실패: 폴백 규칙 적용 ----
             return heuristicLlmAdapter.recommend(command);
         }
@@ -104,14 +108,23 @@ public class GeminiLlmAdapter implements LlmRecommendationPort {
 
     // -------작업단계 검증--------
     private String normalizeStage(DraftRecommendCommand command, String llmStage) {
-        //llm 이 준 작업단계가 유효하면 사용
-        if (llmStage != null && command.fixedStages().contains(llmStage)) {
-            return llmStage;
+
+        // llm 이 준 작업단계가 유효하면 사용 (trim 적용)
+        if (llmStage != null) {
+            String s = llmStage.trim();
+            if (!s.isEmpty() && command.fixedStages().contains(s)) {
+                return s;
+            }
         }
         //최근 스트랩의 작업단계 사용
-        if (command.recentContext() != null && DraftStage.isValid(command.recentContext().stage())) {
-            return command.recentContext().stage();
+        if (command.recentContext() != null) {
+            String recentStage = command.recentContext().stage();
+            if (recentStage != null) {
+                recentStage = recentStage.trim();
+                if (DraftStage.isValid(recentStage)) return recentStage;
+            }
         }
+
         // 기본값은 '기획'으로 설정
         return command.fixedStages().get(0);
     }
