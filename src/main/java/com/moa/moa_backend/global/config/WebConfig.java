@@ -1,6 +1,7 @@
 package com.moa.moa_backend.global.config;
 
 import com.moa.moa_backend.domain.user.repository.UserRepository;
+import com.moa.moa_backend.global.filter.RequestLoggingFilter;
 import com.moa.moa_backend.global.filter.UserIdFilter;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
@@ -19,5 +20,15 @@ public class WebConfig {
 
         return filterRegistrationBean;
     }
+
+    @Bean
+    public FilterRegistrationBean<RequestLoggingFilter> requestLoggingFilter() {
+        FilterRegistrationBean<RequestLoggingFilter> bean = new FilterRegistrationBean<>();
+        bean.setFilter(new RequestLoggingFilter());
+        bean.addUrlPatterns("/api/*");
+        bean.setOrder(2);
+        return bean;
+    }
+
 
 }
