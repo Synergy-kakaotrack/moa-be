@@ -171,8 +171,4 @@ class DraftCommitServiceTest {
         assertThat(scrapRepository.count()).isZero();
     }
 
-
-
-
 }
-
