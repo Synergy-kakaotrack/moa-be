@@ -5,6 +5,8 @@ import com.moa.moa_backend.domain.draft.dto.DraftRecommendation;
 import com.moa.moa_backend.domain.draft.entity.DraftStage;
 import com.moa.moa_backend.domain.draft.entity.RecMethod;
 import com.moa.moa_backend.domain.draft.llm.LlmRecommendationPort;
+import com.moa.moa_backend.global.error.ApiException;
+import com.moa.moa_backend.global.error.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
@@ -94,17 +96,35 @@ public class GeminiLlmAdapter implements LlmRecommendationPort {
 
     //-----프로젝트 ID 검증---------
     private Long normalizeProjectId(DraftRecommendCommand command, Long llmProjectId) {
-        //llm이 null -> null 반환
-        if (llmProjectId == null) return null;
 
-        // 사용자가 프로젝트가 없다면 null 반환
-        if (command.projects() == null || command.projects().isEmpty()) return null;
+        boolean hasProjects = command.projects() != null && !command.projects().isEmpty();
 
-        //llm이 추천한 projectId가 실제로 사용자 프로젝트 목록에 있는지 검증
-        boolean exists = command.projects().stream()
-                .anyMatch(p -> Objects.equals(p.projectId(), llmProjectId));
-        return exists ? llmProjectId : null;
+        // 프로젝트가 아예 없으면 null 정상
+        if (!hasProjects) return null;
+
+        // 후보 ID 목록
+        List<Long> ids = command.projects().stream()
+                .map(p -> p.projectId())
+                .filter(Objects::nonNull)
+                .toList();
+
+        // 1) LLM projectId가 유효하면 사용
+        if (llmProjectId != null && ids.contains(llmProjectId)) return llmProjectId;
+
+        // 2) recentContext로 보정
+        if (command.recentContext() != null) {
+            Long recentId = command.recentContext().projectId();
+            if (recentId != null && ids.contains(recentId)) return recentId;
+        }
+
+        // 3) 프로젝트가 1개면 그걸로 강제 선택
+        if (ids.size() == 1) return ids.get(0);
+
+        // 4) 여기 오면 프로젝트가 있는데도 projectId를 못 정함 → 서버 정책/정합성 오류
+        throw new ApiException(ErrorCode.DRAFT_RECOMMENDATION_INVALID);
     }
+
+
 
     // -------작업단계 검증--------
     private String normalizeStage(DraftRecommendCommand command, String llmStage) {
