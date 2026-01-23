@@ -170,9 +170,12 @@ public class GeminiClient {
                 
                 제약:
                 - stage는 반드시 fixedStages 중 하나여야 한다.
-                - projectId는 projects 목록에 있는 값만 선택할 수 있다.
-                - 적절한 프로젝트가 없다면 projectId는 null로 둬라.
-                - subtitle은 scrapText를 15~25자 내로 요약해라. **가능하면 null을 쓰지 마라.**
+                - projects가 비어있으면 projectId는 null로 출력하라.
+                - projects가 1개 이상이면 projectId는 반드시 projects 중 하나(number)여야 하며 null 금지.
+                - projects가 1개 이상이고 recentContext.projectId가 null이 아니면, projectId는 반드시 recentContext.projectId로 출력하라 (scrapText가 매우 명확히 다른 프로젝트를 가리키는 경우만 예외).
+                - subtitle은 scrapText를 15~25자 내로 요약해라. 가능하면 null을 쓰지 마라.
+                - 반드시 JSON 객체 1개만 출력하고, 앞뒤로 어떤 문자도 붙이지 마라.
+                
                 
                 입력:
                 projects=%s
@@ -184,6 +187,7 @@ public class GeminiClient {
 
                 출력(JSON만):
                 {"projectId": number|null, "stage": string, "subtitle": string|null}
+                ※ 단, projects가 1개 이상이면 projectId는 반드시 number여야 한다(null 금지).
                 """.formatted(
                 projectsStr,
                 recentStr,
