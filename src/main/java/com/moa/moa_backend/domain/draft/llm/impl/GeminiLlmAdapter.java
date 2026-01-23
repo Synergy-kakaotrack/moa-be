@@ -36,7 +36,7 @@ public class GeminiLlmAdapter implements LlmRecommendationPort {
 
         // 1. 사전검증 : fixedStages가 있어야만 추천 가능 없으면 불가능
         if (command.fixedStages() == null || command.fixedStages().isEmpty()) {
-            throw new IllegalStateException("fixedStages must not be empty");
+            throw new ApiException(ErrorCode.DRAFT_RECOMMENDATION_CONFIG_INVALID);
         }
 
         try {
