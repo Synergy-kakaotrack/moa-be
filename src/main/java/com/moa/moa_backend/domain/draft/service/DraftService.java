@@ -176,12 +176,10 @@ public class DraftService {
         );
 
         // draft 삭제 (같은 트랜잭션) -> Scrap 저장 성공 시에만 Draft 삭제됨
-        //draftRepository.delete(draft);
         long deleted = draftRepository.deleteByIdAndUserId(draftId, userId);
         if (deleted == 0) {
-            throw new ApiException(ErrorCode.DRAFT_NOT_FOUND);
+            throw new ApiException(ErrorCode.DRAFT_ALREADY_COMMITTED);
         }
-
 
         return new DraftCommitResponse(scrapId);
     }
