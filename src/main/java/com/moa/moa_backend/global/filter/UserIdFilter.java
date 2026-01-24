@@ -7,6 +7,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.slf4j.MDC;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -15,6 +16,7 @@ public class UserIdFilter extends OncePerRequestFilter {
 
     private static final String USER_ID_HEADER = "X-User-Id";
     private static final String USER_ID_ATTRIBUTE = "userId";
+    private static final String MDC_USER_ID = "userId";
 
     private final UserRepository userRepository;
     public UserIdFilter(UserRepository userRepository) {
@@ -55,11 +57,17 @@ public class UserIdFilter extends OncePerRequestFilter {
             throw new ApiException(ErrorCode.USER_NOT_FOUND);
         }
 
-        //request에 저장
+        // request attribute 저장 (컨트롤러에서 꺼내쓸 수 있게)
         request.setAttribute(USER_ID_ATTRIBUTE, userId);
 
-        //다음 필터 혹은 컨트롤러로 전달
-        filterChain.doFilter(request, response);
+        // MDC 저장 (로그에서 꺼내쓸 수 있게)
+        MDC.put(MDC_USER_ID, String.valueOf(userId));
+
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            MDC.remove(MDC_USER_ID);
+        }
     }
 
 }

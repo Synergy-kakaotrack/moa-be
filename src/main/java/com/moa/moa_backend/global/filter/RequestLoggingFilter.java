@@ -13,9 +13,9 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 
-@Component
 public class RequestLoggingFilter extends OncePerRequestFilter {
     private static final Logger log = LoggerFactory.getLogger("REQUEST");
+    private static final String MDC_USER_ID = "userId";
 
 
     @Override
@@ -34,22 +34,19 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
 
         long start = System.currentTimeMillis();
 
-        //userId 최소검증
-        String raw = req.getHeader("X-User-Id");
-        String userId = (raw != null && raw.matches("\\d{1,10}")) ? raw : "anonymous";
-        MDC.put("userId", userId);
-
-
         String method = req.getMethod();
         String path = req.getRequestURI();
 
-        try{
-            filterChain.doFilter(req,res);
-        }finally {
+        try {
+            filterChain.doFilter(req, res);
+        } finally {
             long latency = System.currentTimeMillis() - start;
             int status = res.getStatus();
-            String errorCode = MDC.get("errorCode");
 
+            String userId = MDC.get(MDC_USER_ID);
+            if (userId == null) userId = "anonymous";
+
+            String errorCode = MDC.get("errorCode");
 
             if (status >= 500) {
                 if (errorCode != null) log.error("[REQ] userId={} {} {} status={} {}ms error={}", userId, method, path, status, latency, errorCode);
@@ -61,8 +58,6 @@ public class RequestLoggingFilter extends OncePerRequestFilter {
                 log.info("[REQ] userId={} {} {} status={} {}ms", userId, method, path, status, latency);
             }
 
-            MDC.clear();
         }
-
     }
 }
