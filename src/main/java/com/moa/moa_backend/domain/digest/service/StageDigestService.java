@@ -22,7 +22,7 @@ import java.util.Optional;
 @Service
 public class StageDigestService {
 
-    private static final int INPUT_SCRAPS_LIMIT = 30;
+    private static final int INPUT_SCRAPS_LIMIT = 20;
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
     private final ProjectRepository projectRepository;
