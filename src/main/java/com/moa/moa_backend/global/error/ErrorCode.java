@@ -9,6 +9,7 @@ public enum ErrorCode {
     INVALID_HEADER_VALUE(HttpStatus.BAD_REQUEST, "REQ_002", "헤더 값이 올바르지 않습니다."),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "REQ_003", "요청 값이 올바르지 않습니다."),
     INVALID_QUERY_PARAM(HttpStatus.BAD_REQUEST, "REQ_004", "쿼리 파라미터가 올바르지 않습니다."),
+    INVALID_JSON(HttpStatus.BAD_REQUEST, "REQ_005", "요청 JSON 형식이 올바르지 않습니다."),
 
     // Not Found (generic)
     NOT_FOUND(HttpStatus.NOT_FOUND, "REQ_404", "요청한 리소스를 찾을 수 없습니다."),
