@@ -1,8 +1,8 @@
 package com.moa.moa_backend.domain.digest.service;
 
-import com.moa.moa_backend.domain.digest.dto.StageDigestDto;
 import com.moa.moa_backend.domain.digest.dto.StageDigestResponse;
 import com.moa.moa_backend.domain.digest.entity.StageDigest;
+import com.moa.moa_backend.domain.digest.llm.StageDigestGeneratorPort;
 import com.moa.moa_backend.domain.digest.repository.StageDigestRepository;
 import com.moa.moa_backend.domain.project.entity.Project;
 import com.moa.moa_backend.domain.project.repository.ProjectRepository;
@@ -23,6 +23,7 @@ import java.util.Optional;
 public class StageDigestService {
 
     private static final int INPUT_SCRAPS_LIMIT = 20;
+    private static final int DIGEST_VERSION = 1;
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
 
     private final ProjectRepository projectRepository;
@@ -30,30 +31,22 @@ public class StageDigestService {
     private final ScrapDigestQueryRepository scrapDigestQueryRepository;
     private final ScrapForDigestRepository scrapForDigestRepository;
 
-    private final StageDigestLlmClient llmClient;
-    private final DigestJsonCodec codec;
+    private final StageDigestGeneratorPort digestGenerator; //Port
 
     public StageDigestService(
             ProjectRepository projectRepository,
             StageDigestRepository stageDigestRepository,
             ScrapDigestQueryRepository scrapDigestQueryRepository,
             ScrapForDigestRepository scrapForDigestRepository,
-            StageDigestLlmClient llmClient,
-            DigestJsonCodec codec
+            StageDigestGeneratorPort digestGenerator
     ) {
         this.projectRepository = projectRepository;
         this.stageDigestRepository = stageDigestRepository;
         this.scrapDigestQueryRepository = scrapDigestQueryRepository;
         this.scrapForDigestRepository = scrapForDigestRepository;
-        this.llmClient = llmClient;
-        this.codec = codec;
+        this.digestGenerator = digestGenerator;
     }
 
-    /**
-     * 단계 요약 조회
-     * - LLM 호출 없음
-     * - exists/outdated만 내려줘서 프론트가 갱신 버튼 UX 구성 가능
-     */
     @Transactional(readOnly = true)
     public StageDigestResponse getDigest(Long userId, Long projectId, String stage) {
         Project project = getOwnedProjectOrThrow(userId, projectId);
@@ -61,7 +54,6 @@ public class StageDigestService {
         Optional<StageDigest> digestOpt =
                 stageDigestRepository.findByUserIdAndProjectIdAndStage(userId, projectId, stage);
 
-        // 최신 스크랩 시각(절대시간: Instant)
         Instant latestScrapInstant =
                 scrapDigestQueryRepository.findLatestCapturedAt(userId, projectId, stage);
 
@@ -74,38 +66,35 @@ public class StageDigestService {
                     null,
                     new StageDigestResponse.Meta(
                             false,
-                            true,   // digest 없으면 갱신 유도
+                            false, // ✅ 요약 없으면 outdated=false
                             null,
                             latestScrapKst,
-                            null
+                            null,
+                            DIGEST_VERSION
                     )
             );
         }
 
         StageDigest digest = digestOpt.get();
-        StageDigestDto dto = codec.fromJson(digest.getDigestJson());
-
-        boolean outdated = computeOutdated(digest.getSourceLastCapturedAt(), latestScrapInstant);
+        String markdown = digest.getDigestText();
+        boolean exists = (markdown != null && !markdown.isBlank());
+        boolean outdated = exists && computeOutdated(digest.getSourceLastCapturedAt(), latestScrapInstant);
 
         return new StageDigestResponse(
                 new StageDigestResponse.ProjectDto(projectId, project.getName()),
                 stage,
-                dto,
+                exists ? markdown : null,
                 new StageDigestResponse.Meta(
-                        true,
+                        exists,
                         outdated,
                         digest.getSourceLastCapturedAt(),
                         latestScrapKst,
-                        digest.getUpdatedAt()
+                        digest.getUpdatedAt(),
+                        DIGEST_VERSION
                 )
         );
     }
 
-    /**
-     * 단계 요약 생성/갱신(버튼 트리거)
-     * - 최근 20개만 입력으로 요약 생성
-     * - LLM 실패 시 기존 digest 유지(트랜잭션 롤백)
-     */
     @Transactional
     public StageDigestResponse refresh(Long userId, Long projectId, String stage) {
         Project project = getOwnedProjectOrThrow(userId, projectId);
@@ -113,7 +102,6 @@ public class StageDigestService {
         Instant latestScrapInstant =
                 scrapDigestQueryRepository.findLatestCapturedAt(userId, projectId, stage);
 
-        // 스크랩이 없으면 요약 생성 불가
         if (latestScrapInstant == null) {
             return new StageDigestResponse(
                     new StageDigestResponse.ProjectDto(projectId, project.getName()),
@@ -124,10 +112,17 @@ public class StageDigestService {
                             false,
                             null,
                             null,
-                            null
+                            null,
+                            DIGEST_VERSION
                     )
             );
         }
+
+        OffsetDateTime latestScrapKst = toKst(latestScrapInstant);
+
+        // LLM 실패 시 기존 유지 위해 미리 조회
+        Optional<StageDigest> existingOpt =
+                stageDigestRepository.findByUserIdAndProjectIdAndStage(userId, projectId, stage);
 
         List<ScrapForDigestView> scraps = scrapForDigestRepository.findRecentForDigest(
                 userId, projectId, stage, PageRequest.of(0, INPUT_SCRAPS_LIMIT)
@@ -140,49 +135,78 @@ public class StageDigestService {
                         s.subtitle(),
                         s.memo(),
                         DigestInputNormalizer.normalizeRawHtml(s.rawHtml()),
-                        s.capturedAt() // Instant 그대로 유지!
+                        s.capturedAt()
                 ))
                 .toList();
 
-        StageDigestDto generated = llmClient.generate(project.getName(), stage, normalized);
-        codec.validate(generated);
+        final String markdown;
+        try {
+            markdown = digestGenerator.generateMarkdown(project.getName(), stage, normalized);
+        } catch (Exception e) {
+            // ✅ 기존 digest 있으면 유지
+            if (existingOpt.isPresent()) {
+                StageDigest existing = existingOpt.get();
+                String existingText = existing.getDigestText();
+                boolean exists = (existingText != null && !existingText.isBlank());
+                boolean outdated = exists && computeOutdated(existing.getSourceLastCapturedAt(), latestScrapInstant);
 
-        String json = codec.toJson(generated);
+                return new StageDigestResponse(
+                        new StageDigestResponse.ProjectDto(projectId, project.getName()),
+                        stage,
+                        exists ? existingText : null,
+                        new StageDigestResponse.Meta(
+                                exists,
+                                outdated,
+                                existing.getSourceLastCapturedAt(),
+                                latestScrapKst,
+                                existing.getUpdatedAt(),
+                                DIGEST_VERSION
+                        )
+                );
+            }
 
-        // 요약이 반영한 최신 스크랩 시각(응답/저장용: KST OffsetDateTime)
-        OffsetDateTime sourceLastCapturedAt = toKst(latestScrapInstant);
+            // ✅ 기존이 없으면 요약 없음으로 반환(200 유지)
+            return new StageDigestResponse(
+                    new StageDigestResponse.ProjectDto(projectId, project.getName()),
+                    stage,
+                    null,
+                    new StageDigestResponse.Meta(
+                            false,
+                            false,
+                            null,
+                            latestScrapKst,
+                            null,
+                            DIGEST_VERSION
+                    )
+            );
+        }
 
-        // upsert (find -> update/save)
-        StageDigest digest = stageDigestRepository
-                .findByUserIdAndProjectIdAndStage(userId, projectId, stage)
-                .orElseGet(() -> StageDigest.create(userId, projectId, stage, json, sourceLastCapturedAt));
+        OffsetDateTime sourceLastCapturedAt = latestScrapKst;
 
-        digest.updateDigest(json, sourceLastCapturedAt);
+        StageDigest digest = existingOpt
+                .orElseGet(() -> StageDigest.create(userId, projectId, stage, null, sourceLastCapturedAt));
 
+        digest.updateDigest(markdown, sourceLastCapturedAt);
         StageDigest saved = stageDigestRepository.save(digest);
 
         return new StageDigestResponse(
                 new StageDigestResponse.ProjectDto(projectId, project.getName()),
                 stage,
-                generated,
+                markdown,
                 new StageDigestResponse.Meta(
                         true,
                         false,
                         saved.getSourceLastCapturedAt(),
-                        toKst(latestScrapInstant),
-                        saved.getUpdatedAt()
+                        latestScrapKst,
+                        saved.getUpdatedAt(),
+                        DIGEST_VERSION
                 )
         );
     }
 
-    /**
-     * outdated 판단:
-     * - latestScrapInstant > sourceLastCapturedAt 이면 true
-     */
     private boolean computeOutdated(OffsetDateTime sourceLastCapturedAt, Instant latestScrapInstant) {
-        if (latestScrapInstant == null) return false;     // 스크랩 없음
-        if (sourceLastCapturedAt == null) return true;    // 기준 없음
-
+        if (latestScrapInstant == null) return false;
+        if (sourceLastCapturedAt == null) return true;
         return latestScrapInstant.isAfter(sourceLastCapturedAt.toInstant());
     }
 
@@ -191,9 +215,6 @@ public class StageDigestService {
         return instant.atOffset(ZoneOffset.UTC).withOffsetSameInstant(KST);
     }
 
-    /**
-     * 권한 검증: 본인 프로젝트만 접근 가능
-     */
     private Project getOwnedProjectOrThrow(Long userId, Long projectId) {
         Project p = projectRepository.findById(projectId)
                 .orElseThrow(() -> new IllegalArgumentException("project not found"));

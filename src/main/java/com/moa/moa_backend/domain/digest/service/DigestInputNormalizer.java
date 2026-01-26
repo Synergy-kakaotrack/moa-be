@@ -60,4 +60,8 @@ public final class DigestInputNormalizer {
         if (text.length() <= maxLen) return text;
         return text.substring(0, maxLen) + "…";
     }
+
+    public static String clampPerScrap(String string) {
+        return clamp(string, MAX_TEXT_PER_SCRAP);
+    }
 }

@@ -33,8 +33,8 @@ public class StageDigest {
     private String stage;
 
     // JSONB: MVP는 문자열로 저장(가장 단순/안전)
-    @Column(name = "digest_json", nullable = false, columnDefinition = "jsonb")
-    private String digestJson;
+    @Column(name = "digest_text")
+    private String digestText;
 
     @Column(name = "source_last_captured_at")
     private OffsetDateTime sourceLastCapturedAt;
@@ -45,20 +45,21 @@ public class StageDigest {
     @Column(name = "updated_at", nullable = false)
     private OffsetDateTime updatedAt;
 
-    public static StageDigest create(Long userId, Long projectId, String stage, String digestJson, OffsetDateTime sourceLastCapturedAt) {
+    public static StageDigest create(Long userId, Long projectId, String stage, String digestText, OffsetDateTime sourceLastCapturedAt) {
         StageDigest d = new StageDigest();
         d.userId = userId;
         d.projectId = projectId;
         d.stage = stage;
-        d.digestJson = digestJson;
+        d.digestText = digestText;
         d.sourceLastCapturedAt = sourceLastCapturedAt;
         return d;
     }
 
-    public void updateDigest(String digestJson, OffsetDateTime sourceLastCapturedAt) {
-        this.digestJson = digestJson;
+    public void updateDigest(String digestText, OffsetDateTime sourceLastCapturedAt) {
+        this.digestText = digestText;
         this.sourceLastCapturedAt = sourceLastCapturedAt;
     }
+
 
     @PrePersist
     void prePersist() {
