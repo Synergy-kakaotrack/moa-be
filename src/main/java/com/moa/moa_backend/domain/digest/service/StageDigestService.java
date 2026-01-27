@@ -8,7 +8,7 @@ import com.moa.moa_backend.domain.project.entity.Project;
 import com.moa.moa_backend.domain.project.repository.ProjectRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapDigestQueryRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestRepository;
-import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestView;
+import com.moa.moa_backend.domain.scrap.repository.projection.ScrapForDigestView;
 import com.moa.moa_backend.global.error.ApiException;
 import com.moa.moa_backend.global.error.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
@@ -43,9 +43,9 @@ public class StageDigestService {
     private final ConcurrentHashMap<String, Boolean> inFlight = new ConcurrentHashMap<>();
 
     private String key(Long userId, Long projectId, String stage) {
-        return userId + ":" + projectId + ":" + stage;
+        String s = (stage == null) ? "" : stage.trim();
+        return userId + ":" + projectId + ":" + s;
     }
-
     public StageDigestService(
             ProjectRepository projectRepository,
             StageDigestRepository stageDigestRepository,

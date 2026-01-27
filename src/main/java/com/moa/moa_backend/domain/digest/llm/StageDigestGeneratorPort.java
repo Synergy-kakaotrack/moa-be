@@ -1,6 +1,6 @@
 package com.moa.moa_backend.domain.digest.llm;
 
-import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestView;
+import com.moa.moa_backend.domain.scrap.repository.projection.ScrapForDigestView;
 
 import java.util.List;
 
