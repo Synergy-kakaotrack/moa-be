@@ -29,9 +29,6 @@ public interface ScrapDigestQueryRepository extends Repository<Scrap, Long> {
      * - since 이후 scraps만 대상
      * - 각 그룹의 최신 captured_at 기준으로 최신순 정렬
      * - limit 개수 제한
-     *
-     * NOTE: 테이블/컬럼명이 실제 DB와 다르면 여기 nativeQuery를 맞춰줘야 함.
-     * (예: table = scraps, column = captured_at/user_id/project_id/stage)
      */
     @Query(value = """
         select
