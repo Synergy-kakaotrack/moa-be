@@ -152,6 +152,56 @@ public class StageDigestService {
 
             OffsetDateTime latestScrapKst = toKst(latestScrapInstant);
 
+            /**
+             * 변경 감지 -> 스킵
+             *
+             * 목적 :
+             * - 스크랩이 변했으 때만 llm 호출/db업데이트 수행
+             * - 변하지 않으면 여기서 바로 기존 digest 반환하여 비용과 부하 차단
+             *
+             */
+            Optional<StageDigest> existingOpt =
+                    stageDigestRepository.findByUserIdAndProjectIdAndStage(userId, projectId, stage);
+
+            if (existingOpt.isPresent()) {
+                StageDigest existing = existingOpt.get();
+
+                /**
+                 * upToDate 조건 설명:
+                 * - digest가 마지막으로 반영했던 스크랩 기준시각이 있고 현재 스크랩 최신시각이
+                 * - 그 이후가 아니라면 "변경 없음"으로 간주 : digest는 이미 최신 상태
+                 */
+                boolean upToDate =
+                        existing.getSourceLastCapturedAt() != null &&
+                                !latestScrapInstant.isAfter(existing.getSourceLastCapturedAt().toInstant());
+
+                if (upToDate) {
+                    log.info("[DIGEST] refresh skipped (up-to-date). userId={}, projectId={}, stage={}, latestScrap={}",
+                            userId, projectId, stage, latestScrapKst);
+
+                    String text = existing.getDigestText();
+                    boolean exists = (text != null && !text.isBlank());
+
+                    return new StageDigestResponse(
+                            new StageDigestResponse.ProjectDto(projectId, project.getName()),
+                            stage,
+                            exists ? text : null,
+                            new StageDigestResponse.Meta(
+                                    exists,
+                                    false, // 최신이므로 outdated=false
+                                    existing.getSourceLastCapturedAt(),
+                                    latestScrapKst,
+                                    existing.getUpdatedAt(),
+                                    DIGEST_VERSION
+                            )
+                    );
+                }
+            }
+
+            /**
+             * upToDate가 아니면(스크랩이 바뀌었으면) 여기부터 실제 갱신 수행
+             * 스크랩 목록 조회 -> 입력 정규화 -> (의미 있는 입력 확인) -> LLM -> DB upsert
+             */
             List<ScrapForDigestView> scraps = scrapForDigestRepository.findRecentForDigest(
                     userId, projectId, stage, PageRequest.of(0, INPUT_SCRAPS_LIMIT)
             );
@@ -182,6 +232,8 @@ public class StageDigestService {
                         latestScrapInstant, latestScrapKst
                 );
             }
+
+
 
             // =========================
             // LLM 호출 (트랜잭션 밖)
