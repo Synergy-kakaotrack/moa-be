@@ -32,6 +32,9 @@ public enum ErrorCode {
     SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, "SCP_404", "스크랩을 찾을 수 없습니다."),
     SCRAP_CONTENT_CONVERSION_FAILED(HttpStatus.SERVICE_UNAVAILABLE, "SCP_503", "스크랩 내용을 변환할 수 없습니다."),
 
+    // digest
+    DIGEST_REFRESH_IN_PROGRESS(HttpStatus.CONFLICT, "DIG_409", "해당 단계 요약이 이미 갱신 중입니다."),
+
     //server
     INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "SRV_500", "서버 오류가 발생했습니다."),
     EXTERNAL_DEPENDENCY_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "SRV_503", "외부 시스템 오류가 발생했습니다.");
