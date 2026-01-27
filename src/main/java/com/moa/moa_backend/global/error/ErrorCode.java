@@ -26,7 +26,7 @@ public enum ErrorCode {
     DRAFT_EXPIRED(HttpStatus.GONE, "DRF_410", "드래프트가 만료되었습니다."),
     DRAFT_ALREADY_COMMITTED(HttpStatus.CONFLICT, "DRF_409", "이미 처리된 드래프트입니다."),
     DRAFT_RECOMMENDATION_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "DRF_500", "드래프트 추천 결과가 유효하지 않습니다."),
-    DRAFT_RECOMMENDATION_CONFIG_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "DRF_500", "드래프트 추천 설정이 유효하지 않습니다."),
+    DRAFT_RECOMMENDATION_CONFIG_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "DRF_501", "드래프트 추천 설정이 유효하지 않습니다."),
 
     //scraps
     SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, "SCP_404", "스크랩을 찾을 수 없습니다."),
