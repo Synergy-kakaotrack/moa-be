@@ -100,7 +100,6 @@ public class DraftService {
             throw new ApiException(ErrorCode.DRAFT_RECOMMENDATION_INVALID);
         }
 
-        boolean hasProjects = !projects.isEmpty();
 
 
         // 5) drafts 저장

@@ -33,6 +33,13 @@ moa:
       api-key: ${MOA_LLM_GEMINI_API_KEY}
       model: gemini-2.0-flash
     timeout-ms: 3000
+    digest-timeout-ms: 15000
+
+  digest:
+    auto-refresh:
+      cron: "0 0 4 * * *"        # 매일 04:00 KST
+      daily-limit: 200           # 하루 처리량 제한
+      lookback-days: 7           # 최근 7일 활동 stage만 대상
 
 
 ---
