@@ -22,6 +22,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -37,6 +38,15 @@ public class StageDigestService {
     private final ScrapForDigestRepository scrapForDigestRepository;
 
     private final StageDigestGeneratorPort digestGenerator;
+
+    //유니크 단위로 갱신 중 상태 관리
+    // NOTE: inFlight는 단일 인스턴스에서만 유효. 멀티 인스턴스면 분산락 필요
+    private final ConcurrentHashMap<String, Boolean> inFlight = new ConcurrentHashMap<>();
+
+    private String key(Long userId, Long projectId, String stage) {
+        return userId + ":" + projectId + ":" + stage;
+    }
+
 
     public StageDigestService(
             ProjectRepository projectRepository,
@@ -63,7 +73,7 @@ public class StageDigestService {
         Optional<StageDigest> digestOpt =
                 stageDigestRepository.findByUserIdAndProjectIdAndStage(userId, projectId, stage);
 
-        //해당 단계의 쵯니 스크랩 캡처 시각 조회
+        //해당 단계의 최신 스크랩 캡처 시각 조회
         Instant latestScrapInstant =
                 scrapDigestQueryRepository.findLatestCapturedAt(userId, projectId, stage);
 
@@ -113,108 +123,131 @@ public class StageDigestService {
     // =========================
     @Transactional
     public StageDigestResponse refresh(Long userId, Long projectId, String stage) {
-        Project project = getOwnedProjectOrThrow(userId, projectId);
 
-        //최신 스크랩 기준 시각 (digest 최신성 판단 기준)
-        Instant latestScrapInstant =
-                scrapDigestQueryRepository.findLatestCapturedAt(userId, projectId, stage);
+        String lockKey = key(userId, projectId, stage);
 
-        //스크랩 자체가 없으면 요약 대상이 없음
-        if (latestScrapInstant == null) {
-            return new StageDigestResponse(
-                    new StageDigestResponse.ProjectDto(projectId, project.getName()),
-                    stage,
-                    null,
-                    new StageDigestResponse.Meta(
-                            false,
-                            false,
-                            null,
-                            null,
-                            null,
-                            DIGEST_VERSION
-                    )
+        // 이미 처리 중이면 409 반환
+        if (inFlight.putIfAbsent(lockKey, Boolean.TRUE) != null) {
+            throw new ApiException(ErrorCode.DIGEST_REFRESH_IN_PROGRESS);
+        }
+        try {
+            Project project = getOwnedProjectOrThrow(userId, projectId);
+
+            //최신 스크랩 기준 시각 (digest 최신성 판단 기준)
+            Instant latestScrapInstant =
+                    scrapDigestQueryRepository.findLatestCapturedAt(userId, projectId, stage);
+
+            //스크랩 자체가 없으면 요약 대상이 없음
+            if (latestScrapInstant == null) {
+                return new StageDigestResponse(
+                        new StageDigestResponse.ProjectDto(projectId, project.getName()),
+                        stage,
+                        null,
+                        new StageDigestResponse.Meta(
+                                false,
+                                false,
+                                null,
+                                null,
+                                null,
+                                DIGEST_VERSION
+                        )
+                );
+            }
+
+            OffsetDateTime latestScrapKst = toKst(latestScrapInstant);
+
+            //llm 입력으로 사용할 최근 스크랩 조회
+            List<ScrapForDigestView> scraps = scrapForDigestRepository.findRecentForDigest(
+                    userId, projectId, stage, PageRequest.of(0, INPUT_SCRAPS_LIMIT)
             );
-        }
 
-        OffsetDateTime latestScrapKst = toKst(latestScrapInstant);
+            //rawHtml 정규화
+            List<ScrapForDigestView> normalized = scraps.stream()
+                    .map(s -> new ScrapForDigestView(
+                            s.scrapId(),
+                            s.subtitle(),
+                            s.memo(),
+                            DigestInputNormalizer.normalizeRawHtml(s.rawHtml()),
+                            s.capturedAt()
+                    ))
+                    .toList();
 
-        //llm 입력으로 사용할 최근 스크랩 조회
-        List<ScrapForDigestView> scraps = scrapForDigestRepository.findRecentForDigest(
-                userId, projectId, stage, PageRequest.of(0, INPUT_SCRAPS_LIMIT)
-        );
+            //LLM 호출 전에 "의미 있는 입력"이 있는지 검사
+            boolean hasAnyInput = normalized.stream().anyMatch(s ->
+                    (s.rawHtml() != null && !s.rawHtml().isBlank()) ||
+                            (s.subtitle() != null && !s.subtitle().isBlank()) ||
+                            (s.memo() != null && !s.memo().isBlank())
+            );
 
-        //rawHtml 정규화
-        List<ScrapForDigestView> normalized = scraps.stream()
-                .map(s -> new ScrapForDigestView(
-                        s.scrapId(),
-                        s.subtitle(),
-                        s.memo(),
-                        DigestInputNormalizer.normalizeRawHtml(s.rawHtml()),
-                        s.capturedAt()
-                ))
-                .toList();
+            if (!hasAnyInput) {
+                log.debug("[DIGEST] refresh skipped (no meaningful scraps). userId={}, projectId={}, stage={}",userId, projectId, stage);
+                // LLM에 넣을 게 없으면 기존 digest 유지(없으면 null)
+                return fallbackExistingDigest(
+                        userId, projectId, project.getName(), stage,
+                        latestScrapInstant, latestScrapKst
+                );
+            }
 
-        // -------------------------
-        // LLM 호출 (실패 가능 영역)
-        // -------------------------
-        final String markdown;
-        try {
-            markdown = digestGenerator.generateMarkdown(project.getName(), stage, normalized);
-        } catch (Exception e) {
-            // LLM 실패 시에도 API는 200 유지
-            // - 기존 digest가 있으면 그대로 반환
-            // - 없으면 digest=null 응답
-            log.error("[DIGEST] refresh failed. userId={}, projectId={}, stage={}, scraps={}",
-                    userId, projectId, stage, normalized.size(), e);
+            // -------------------------
+            // LLM 호출 (실패 가능 영역)
+            // -------------------------
+            final String markdown;
+            try {
+                markdown = digestGenerator.generateMarkdown(project.getName(), stage, normalized);
+            } catch (Exception e) {
+                // LLM 실패 시에도 API는 200 유지
+                // - 기존 digest가 있으면 그대로 반환
+                // - 없으면 digest=null 응답
+                log.error("[DIGEST] refresh failed. userId={}, projectId={}, stage={}, scraps={}",
+                        userId, projectId, stage, normalized.size(), e);
 
-            return fallbackExistingDigest(userId, projectId, project.getName(), stage, latestScrapInstant, latestScrapKst);
-        }
+                return fallbackExistingDigest(userId, projectId, project.getName(), stage, latestScrapInstant, latestScrapKst);
+            }
 
-        OffsetDateTime sourceLastCapturedAt = latestScrapKst;
+            OffsetDateTime sourceLastCapturedAt = latestScrapKst;
 
-        // ======================================================
-        // 동시성 대응 Upsert 로직 (JPA 재시도 방식)
-        // ======================================================
+            // ======================================================
+            // 동시성 대응 Upsert 로직 (JPA 재시도 방식)
+            // ======================================================
 
-        // 1) 먼저 조회해서 있으면 update
-        Optional<StageDigest> existingOpt =
-                stageDigestRepository.findByUserIdAndProjectIdAndStage(userId, projectId, stage);
+            // 1) 먼저 조회해서 있으면 update
+            Optional<StageDigest> existingOpt =
+                    stageDigestRepository.findByUserIdAndProjectIdAndStage(userId, projectId, stage);
 
-        if (existingOpt.isPresent()) {
-            //기존 엔티티는 유니크 컬럼을 건드리지 않으므로 유니크 충돌 가능성이 거의 없음
-            StageDigest existing = existingOpt.get();
-            existing.updateDigest(markdown, sourceLastCapturedAt);
-            StageDigest saved = stageDigestRepository.save(existing);
+            if (existingOpt.isPresent()) {
+                StageDigest existing = existingOpt.get();
+                existing.updateDigest(markdown, sourceLastCapturedAt);
+                StageDigest saved = stageDigestRepository.save(existing);
 
-            return successResponse(projectId, project.getName(), stage, markdown, saved, latestScrapKst);
-        }
+                return successResponse(projectId, project.getName(), stage, markdown, saved, latestScrapKst);
+            }
 
-        // 2) 없으면 insert 시도
-        try {
-            StageDigest created = StageDigest.create(userId, projectId, stage, null, sourceLastCapturedAt);
-            created.updateDigest(markdown, sourceLastCapturedAt);
-            // saveAndFlush:
-            // - INSERT SQL을 즉시 실행시켜
-            // - 유니크 제약 위반이 try-catch 내부에서 발생하도록 보장
-            StageDigest saved = stageDigestRepository.saveAndFlush(created);
+            // 2) 없으면 insert 시도
+            try {
+                StageDigest created = StageDigest.create(userId, projectId, stage, null, sourceLastCapturedAt);
+                created.updateDigest(markdown, sourceLastCapturedAt);
+                StageDigest saved = stageDigestRepository.saveAndFlush(created);
 
-            return successResponse(projectId, project.getName(), stage, markdown, saved, latestScrapKst);
+                return successResponse(projectId, project.getName(), stage, markdown, saved, latestScrapKst);
 
-        } catch (DataIntegrityViolationException e) {
-            // 3) 동시 요청으로 인해 조회 시점엔 없었지만, Insert 순간 다른 트랜잭션이 먼저 삽입한 경우
-            log.warn("[DIGEST] upsert race detected. retry update. userId={}, projectId={}, stage={}",
-                    userId, projectId, stage, e);
+            } catch (DataIntegrityViolationException e) {
+                // 3) 동시 요청으로 인해 조회 시점엔 없었지만, Insert 순간 다른 트랜잭션이 먼저 삽입한 경우
+                log.warn("[DIGEST] upsert race detected. retry update. userId={}, projectId={}, stage={}",
+                        userId, projectId, stage, e);
 
-            // 다시 조회해서 update로 전환
-            StageDigest nowExisting = stageDigestRepository
-                    .findByUserIdAndProjectIdAndStage(userId, projectId, stage)
-                    .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR));
+                // 다시 조회해서 update로 전환
+                StageDigest nowExisting = stageDigestRepository
+                        .findByUserIdAndProjectIdAndStage(userId, projectId, stage)
+                        .orElseThrow(() -> new ApiException(ErrorCode.INTERNAL_ERROR));
 
-            nowExisting.updateDigest(markdown, sourceLastCapturedAt);
-            //재시도 update도 즉시 반영
-            StageDigest saved = stageDigestRepository.saveAndFlush(nowExisting);
+                nowExisting.updateDigest(markdown, sourceLastCapturedAt);
+                StageDigest saved = stageDigestRepository.save(nowExisting);
 
-            return successResponse(projectId, project.getName(), stage, markdown, saved, latestScrapKst);
+                return successResponse(projectId, project.getName(), stage, markdown, saved, latestScrapKst);
+            }
+        } finally {
+            // 성공/실패/예외 상관없이 반드시 해제
+            inFlight.remove(lockKey);
         }
     }
 
