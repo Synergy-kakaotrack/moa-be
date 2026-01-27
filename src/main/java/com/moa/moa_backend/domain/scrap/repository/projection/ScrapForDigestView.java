@@ -1,7 +1,6 @@
-package com.moa.moa_backend.domain.scrap.repository;
+package com.moa.moa_backend.domain.scrap.repository.projection;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 
 /**
  * LLM 입력용으로 필요한 스크랩 필드만 추려온 Projection.

@@ -1,6 +1,7 @@
 package com.moa.moa_backend.domain.scrap.repository;
 
 import com.moa.moa_backend.domain.scrap.entity.Scrap;
+import com.moa.moa_backend.domain.scrap.repository.projection.ScrapForDigestView;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -11,7 +12,7 @@ import java.util.List;
 public interface ScrapForDigestRepository extends Repository<Scrap, Long> {
 
     @Query("""
-        select new com.moa.moa_backend.domain.scrap.repository.ScrapForDigestView(
+        select new com.moa.moa_backend.domain.scrap.repository.projection.ScrapForDigestView(
             s.id, s.subtitle, s.memo, s.rawHtml, s.capturedAt
         )
         from Scrap s

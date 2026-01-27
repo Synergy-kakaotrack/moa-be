@@ -3,7 +3,7 @@ package com.moa.moa_backend.domain.digest.llm.impl;
 import com.moa.moa_backend.domain.digest.llm.StageDigestGeneratorPort;
 import com.moa.moa_backend.domain.digest.service.DigestInputNormalizer;
 import com.moa.moa_backend.domain.digest.service.DigestTextValidator;
-import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestView;
+import com.moa.moa_backend.domain.scrap.repository.projection.ScrapForDigestView;
 import com.moa.moa_backend.global.llm.gemini.GeminiClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
