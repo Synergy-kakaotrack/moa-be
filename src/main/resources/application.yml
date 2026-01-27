@@ -111,5 +111,29 @@ moa:
   llm:
     gemini:
       api-key: ${MOA_LLM_GEMINI_API_KEY:dummy}
+---
+spring:
+  config:
+    activate:
+      on-profile: test
+
+  flyway:
+    enabled: false
+
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+
+moa:
+  llm:
+    gemini:
+      api-key: dummy
+      model: gemini-2.0-flash
 
 
