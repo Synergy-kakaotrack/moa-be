@@ -9,6 +9,8 @@ import com.moa.moa_backend.domain.project.repository.ProjectRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapDigestQueryRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestView;
+import com.moa.moa_backend.global.error.ApiException;
+import com.moa.moa_backend.global.error.ErrorCode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -226,10 +228,10 @@ public class StageDigestService {
 
     private Project getOwnedProjectOrThrow(Long userId, Long projectId) {
         Project p = projectRepository.findById(projectId)
-                .orElseThrow(() -> new IllegalArgumentException("project not found"));
+                .orElseThrow(() -> new ApiException(ErrorCode.PROJECT_NOT_FOUND));
 
         if (!p.getUserId().equals(userId)) {
-            throw new SecurityException("forbidden");
+            throw new ApiException(ErrorCode.PROJECT_NOT_FOUND);
         }
         return p;
     }
