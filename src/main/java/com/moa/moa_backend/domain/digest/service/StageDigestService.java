@@ -9,6 +9,7 @@ import com.moa.moa_backend.domain.project.repository.ProjectRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapDigestQueryRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestRepository;
 import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestView;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 
+@Slf4j
 @Service
 public class StageDigestService {
 
@@ -51,9 +53,11 @@ public class StageDigestService {
     public StageDigestResponse getDigest(Long userId, Long projectId, String stage) {
         Project project = getOwnedProjectOrThrow(userId, projectId);
 
+        //digest 조회
         Optional<StageDigest> digestOpt =
                 stageDigestRepository.findByUserIdAndProjectIdAndStage(userId, projectId, stage);
 
+        //최신 스크랩 캡처시간 조회
         Instant latestScrapInstant =
                 scrapDigestQueryRepository.findLatestCapturedAt(userId, projectId, stage);
 
@@ -66,7 +70,7 @@ public class StageDigestService {
                     null,
                     new StageDigestResponse.Meta(
                             false,
-                            false, // ✅ 요약 없으면 outdated=false
+                            false, // 요약 없으면 outdated=false
                             null,
                             latestScrapKst,
                             null,
@@ -143,7 +147,11 @@ public class StageDigestService {
         try {
             markdown = digestGenerator.generateMarkdown(project.getName(), stage, normalized);
         } catch (Exception e) {
-            // ✅ 기존 digest 있으면 유지
+
+            log.error("[DIGEST] refresh failed. userId={}, projectId={}, stage={}, scraps={}",
+                    userId, projectId, stage, normalized.size(), e);
+
+            // 기존 digest 있으면 유지
             if (existingOpt.isPresent()) {
                 StageDigest existing = existingOpt.get();
                 String existingText = existing.getDigestText();
@@ -165,7 +173,7 @@ public class StageDigestService {
                 );
             }
 
-            // ✅ 기존이 없으면 요약 없음으로 반환(200 유지)
+            // 기존이 없으면 요약 없음으로 반환(200 유지)
             return new StageDigestResponse(
                     new StageDigestResponse.ProjectDto(projectId, project.getName()),
                     stage,
@@ -204,6 +212,7 @@ public class StageDigestService {
         );
     }
 
+    // 최신 스크랩 캡처시간이 소스 기준시간보다 이후면 outdated
     private boolean computeOutdated(OffsetDateTime sourceLastCapturedAt, Instant latestScrapInstant) {
         if (latestScrapInstant == null) return false;
         if (sourceLastCapturedAt == null) return true;

@@ -5,7 +5,8 @@ import org.jsoup.nodes.Document;
 
 public final class DigestInputNormalizer {
 
-    public static final int MAX_TEXT_PER_SCRAP = 1500; // 스크랩 1개당 최대 글자
+    public static final int MAX_TEXT_PER_SCRAP = 800; // 스크랩 1개당 최대 글자
+    public static final int MAX_MERGED_PER_SCRAP = 1000; // subtitle+memo+text 최종
     public static final int MAX_TOTAL_TEXT = 20000;    // stage 전체 합산 최대 글자
     public static final int MIN_TEXT_LENGTH = 50;      // 이보다 짧으면 잡음으로 보고 제외
 
@@ -64,4 +65,14 @@ public final class DigestInputNormalizer {
     public static String clampPerScrap(String string) {
         return clamp(string, MAX_TEXT_PER_SCRAP);
     }
+
+    public static String clampTextOnly(String text) {
+        return clamp(text, MAX_TEXT_PER_SCRAP); // 800
+    }
+
+    public static String clampMergedPerScrap(String text) {
+        return clamp(text, MAX_MERGED_PER_SCRAP); // 1000
+    }
+
+
 }

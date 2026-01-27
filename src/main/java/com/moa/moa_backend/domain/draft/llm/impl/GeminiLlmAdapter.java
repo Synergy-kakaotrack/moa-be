@@ -22,8 +22,8 @@ import java.util.stream.Collectors;
 @Component
 public class GeminiLlmAdapter implements LlmRecommendationPort {
 
-    private final GeminiClient geminiClient;          // ✅ global 엔진
-    private final GeminiDraftCodec codec;             // ✅ prompt/parse 담당
+    private final GeminiClient geminiClient;          // global 엔진
+    private final GeminiDraftCodec codec;             // prompt/parse 담당
     private final HeuristicLlmAdapter heuristicLlmAdapter;
 
     public GeminiLlmAdapter(GeminiClient geminiClient, GeminiDraftCodec codec, HeuristicLlmAdapter heuristicLlmAdapter) {
@@ -42,7 +42,7 @@ public class GeminiLlmAdapter implements LlmRecommendationPort {
             GeminiDraftCodec.RecommendInput input = toLlmInput(command);
 
             String prompt = codec.buildPrompt(input);
-            String rawText = geminiClient.generateText(prompt);      // ✅ 공통 호출
+            String rawText = geminiClient.generateText(prompt);      // 공통 호출
             GeminiDraftCodec.LlmResult llm = codec.parseResult(rawText);
 
             Long projectId = normalizeProjectId(command, llm.projectId());

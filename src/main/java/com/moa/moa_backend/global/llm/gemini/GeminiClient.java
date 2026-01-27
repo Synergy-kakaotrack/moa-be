@@ -28,8 +28,18 @@ public class GeminiClient {
         this.model = model;
         this.timeout = Duration.ofMillis(timeoutMs);
     }
-
+    // draft: 기본 timeout
     public String generateText(String prompt) {
+        return generateTextInternal(prompt, timeout);
+    }
+
+    // digest: timeout override
+    public String generateText(String prompt, Duration timeoutOverride) {
+        Duration t = (timeoutOverride != null) ? timeoutOverride : timeout;
+        return generateTextInternal(prompt, t);
+    }
+
+    private String generateTextInternal(String prompt, Duration t) {
         try {
             GeminiResponse response = webClient.post()
                     .uri(uriBuilder -> uriBuilder
@@ -40,7 +50,7 @@ public class GeminiClient {
                     .bodyValue(requestBody(prompt))
                     .retrieve()
                     .bodyToMono(GeminiResponse.class)
-                    .block(timeout);
+                    .block(t);
 
             if (response == null) throw new GeminiClientException("Gemini response is null");
             return extractText(response);
@@ -53,6 +63,7 @@ public class GeminiClient {
             throw new GeminiClientException("Gemini call failed", e);
         }
     }
+
 
     private Map<String, Object> requestBody(String prompt) {
         return Map.of(

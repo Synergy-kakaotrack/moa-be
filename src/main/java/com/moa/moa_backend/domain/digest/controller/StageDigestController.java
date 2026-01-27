@@ -54,7 +54,7 @@ public class StageDigestController {
             @Parameter(description = "요청 사용자 ID (X-User-Id 헤더)", required = true, example = "1")
             @RequestHeader("X-User-Id") Long userId,
 
-            @Parameter(description = "프로젝트 ID", required = true, example = "10")
+            @Parameter(description = "프로젝트 ID", required = true, example = "15")
             @PathVariable Long projectId,
 
             @Parameter(description = "작업단계 (예: 설계)", required = true, example = "설계")
@@ -89,7 +89,7 @@ public class StageDigestController {
             @Parameter(description = "요청 사용자 ID (X-User-Id 헤더)", required = true, example = "1")
             @RequestHeader("X-User-Id") Long userId,
 
-            @Parameter(description = "프로젝트 ID", required = true, example = "10")
+            @Parameter(description = "프로젝트 ID", required = true, example = "15")
             @PathVariable Long projectId,
 
             @Parameter(description = "작업단계 (예: 설계)", required = true, example = "설계")

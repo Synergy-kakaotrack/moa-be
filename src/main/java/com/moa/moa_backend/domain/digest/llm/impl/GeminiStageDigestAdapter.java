@@ -5,9 +5,11 @@ import com.moa.moa_backend.domain.digest.service.DigestInputNormalizer;
 import com.moa.moa_backend.domain.digest.service.DigestTextValidator;
 import com.moa.moa_backend.domain.scrap.repository.ScrapForDigestView;
 import com.moa.moa_backend.global.llm.gemini.GeminiClient;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
+import java.time.Duration;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
@@ -21,6 +23,9 @@ import java.util.List;
 @Primary
 @Component
 public class GeminiStageDigestAdapter implements StageDigestGeneratorPort {
+
+    @Value("${moa.llm.digest-timeout-ms:15000}")
+    private long digestTimeoutMs;
 
     private static final ZoneOffset KST = ZoneOffset.ofHours(9);
     private static final DateTimeFormatter TS =
@@ -37,16 +42,21 @@ public class GeminiStageDigestAdapter implements StageDigestGeneratorPort {
     @Override
     public String generateMarkdown(String projectName, String stage, List<ScrapForDigestView> scraps) {
         String prompt = buildPrompt(projectName, stage, scraps);
-        String raw = geminiClient.generateText(prompt);
+
+        String raw = geminiClient.generateText(
+                prompt,
+                Duration.ofMillis(digestTimeoutMs)
+        );
 
         String markdown = validator.normalize(raw);
         validator.validate(markdown);
-
         return markdown;
     }
 
+
     private String buildPrompt(String projectName, String stage, List<ScrapForDigestView> scraps) {
         List<ScrapForDigestView> ordered = scraps == null ? List.of() :
+                //스크랩 시간순으로 정렬
                 scraps.stream().sorted(Comparator.comparing(ScrapForDigestView::capturedAt)).toList();
 
         StringBuilder sb = new StringBuilder();
@@ -112,8 +122,11 @@ public class GeminiStageDigestAdapter implements StageDigestGeneratorPort {
         입력 스크랩(시간순):
         """.formatted(projectName, stage));
 
+        int included = 0;
+
         for (ScrapForDigestView s : ordered) {
-            String baseText = DigestInputNormalizer.normalizeRawHtml(s.rawHtml());
+            // service에서 이미 정규화된 텍스트를 rawHtml 필드에 넣어서 넘긴다는 전제
+            String baseText = (s.rawHtml() == null) ? "" : s.rawHtml();
             if (baseText.isBlank()
                     && (s.subtitle() == null || s.subtitle().isBlank())
                     && (s.memo() == null || s.memo().isBlank())) {
@@ -128,15 +141,27 @@ public class GeminiStageDigestAdapter implements StageDigestGeneratorPort {
             if (s.memo() != null && !s.memo().isBlank()) {
                 merged.append("[memo] ").append(s.memo()).append(" ");
             }
+            // text는 "text-only clamp(800)"를 한 번 더 적용해서 비중/길이 제어
+            // - 서비스에서 이미 normalizeRawHtml로 1차 정규화/클램프 되었더라도,
+            //   merged 정책에 맞춰 여기서 최종적으로 다시 제한해도 안전함.
             if (!baseText.isBlank()) {
-                merged.append("[text] ").append(baseText);
+                String textOnly = DigestInputNormalizer.clampTextOnly(baseText);
+                merged.append("[text] ").append(textOnly);
             }
 
-            String finalText = DigestInputNormalizer.clampPerScrap(merged.toString());
+            // merged(subtitle+memo+text)는 "merged clamp(1000)" 기준으로 제한
+            // - 기존 clampPerScrap(=800)는 text 기준이라 merged에 쓰면 너무 잘림
+            String finalText = DigestInputNormalizer.clampMergedPerScrap(merged.toString());
 
             sb.append("\n---\n");
             sb.append("capturedAt: ").append(TS.format(s.capturedAt())).append("\n");
             sb.append(finalText).append("\n");
+
+            included++;
+        }
+
+        if (included == 0) {
+            throw new IllegalArgumentException("digest input scraps are empty after normalization");
         }
 
 

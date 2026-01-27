@@ -32,12 +32,11 @@ public class StageDigest {
     @Column(name = "stage", nullable = false, length = 30)
     private String stage;
 
-    // JSONB: MVP는 문자열로 저장(가장 단순/안전)
     @Column(name = "digest_text")
     private String digestText;
 
     @Column(name = "source_last_captured_at")
-    private OffsetDateTime sourceLastCapturedAt;
+    private OffsetDateTime sourceLastCapturedAt;    //이 요약이 만들어질 당시 기준이 된 Scrap의 최신 capturedAt
 
     @Column(name = "created_at", nullable = false)
     private OffsetDateTime createdAt;
