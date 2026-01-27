@@ -33,6 +33,7 @@ moa:
       api-key: ${MOA_LLM_GEMINI_API_KEY}
       model: gemini-2.0-flash
     timeout-ms: 3000
+    digest-timeout-ms: 15000
 
 
 ---

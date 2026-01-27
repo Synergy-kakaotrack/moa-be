@@ -3,6 +3,7 @@ package com.moa.moa_backend.global.error;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -115,5 +116,35 @@ public class GlobalExceptionHandler {
                         null
                 ));
     }
+
+    /**
+     * JSON 파싱 실패 (잘못된 JSON 형식, 줄바꿈 미이스케이프 등)
+     * -> 400 INVALID_JSON
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidJson(
+            HttpMessageNotReadableException e,
+            HttpServletRequest request
+    ) {
+        ErrorCode errorCode = ErrorCode.INVALID_JSON;
+        MDC.put("errorCode", errorCode.code());
+
+        log.warn(
+                "Invalid JSON request. path={}, cause={}",
+                request.getRequestURI(),
+                e.getMostSpecificCause() != null ? e.getMostSpecificCause().getMessage() : e.getMessage()
+        );
+
+        return ResponseEntity
+                .status(errorCode.httpStatus())
+                .body(new ErrorResponse(
+                        errorCode.code(),
+                        errorCode.message(),
+                        request.getRequestURI(),
+                        Instant.now(),
+                        null
+                ));
+    }
+
 
 }

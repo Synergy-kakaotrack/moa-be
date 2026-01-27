@@ -11,6 +11,7 @@ import com.moa.moa_backend.domain.scrap.service.ScrapService;
 import com.moa.moa_backend.global.error.ApiException;
 import com.moa.moa_backend.global.error.ErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,6 +25,7 @@ import java.util.List;
  * 확장프로그램에서 스크랩한 내용을 임시 저장하고 LLM을 통해 프로젝트/단계/소제목을 추천받은 후
  * 사용자 확정 시 실제 Scrap으로 변환하는 역할
  */
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class DraftService {
@@ -89,6 +91,17 @@ public class DraftService {
 
         DraftRecommendation rec = llmRecommendationPort.recommend(command);
 
+        if (rec == null) {
+            log.error("[DRAFT] recommendation is null: userId={}, projectsSize={}, recentProjectId={}",
+                    userId,
+                    projects.size(),
+                    recentContext == null ? null : recentContext.projectId()
+            );
+            throw new ApiException(ErrorCode.DRAFT_RECOMMENDATION_INVALID);
+        }
+
+
+
         // 5) drafts 저장
         Draft saved = draftRepository.save(Draft.create(
                 userId,
@@ -115,7 +128,6 @@ public class DraftService {
 
     }
 
-//TODO 아직 최종 저장하는걸 안만들어서 드래프트 만들고 조회하려고 일단 만들어두고, 나중에 필요없으면 주석처리할 예정
     /**
      * 최신 드래프트 조회
      *

@@ -9,6 +9,7 @@ public enum ErrorCode {
     INVALID_HEADER_VALUE(HttpStatus.BAD_REQUEST, "REQ_002", "헤더 값이 올바르지 않습니다."),
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "REQ_003", "요청 값이 올바르지 않습니다."),
     INVALID_QUERY_PARAM(HttpStatus.BAD_REQUEST, "REQ_004", "쿼리 파라미터가 올바르지 않습니다."),
+    INVALID_JSON(HttpStatus.BAD_REQUEST, "REQ_005", "요청 JSON 형식이 올바르지 않습니다."),
 
     // Not Found (generic)
     NOT_FOUND(HttpStatus.NOT_FOUND, "REQ_404", "요청한 리소스를 찾을 수 없습니다."),
@@ -24,6 +25,8 @@ public enum ErrorCode {
     DRAFT_NOT_FOUND(HttpStatus.NOT_FOUND, "DRF_404", "드래프트를 찾을 수 없습니다."),
     DRAFT_EXPIRED(HttpStatus.GONE, "DRF_410", "드래프트가 만료되었습니다."),
     DRAFT_ALREADY_COMMITTED(HttpStatus.CONFLICT, "DRF_409", "이미 처리된 드래프트입니다."),
+    DRAFT_RECOMMENDATION_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "DRF_500", "드래프트 추천 결과가 유효하지 않습니다."),
+    DRAFT_RECOMMENDATION_CONFIG_INVALID(HttpStatus.INTERNAL_SERVER_ERROR, "DRF_501", "드래프트 추천 설정이 유효하지 않습니다."),
 
     //scraps
     SCRAP_NOT_FOUND(HttpStatus.NOT_FOUND, "SCP_404", "스크랩을 찾을 수 없습니다."),

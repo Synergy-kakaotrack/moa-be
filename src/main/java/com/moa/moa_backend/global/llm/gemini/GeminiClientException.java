@@ -1,4 +1,4 @@
-package com.moa.moa_backend.domain.draft.llm.impl;
+package com.moa.moa_backend.global.llm.gemini;
 
 public class GeminiClientException extends RuntimeException{
     public GeminiClientException(String message) {
