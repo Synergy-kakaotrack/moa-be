@@ -21,7 +21,15 @@ public record StageDigestResponse(
             OffsetDateTime sourceLastCapturedAt,
             OffsetDateTime latestScrapCapturedAt,
             OffsetDateTime updatedAt,
-            int version
+            int version,
+            Refresh refresh
+    ) {}
+
+    public record Refresh(
+            String status,              // SUCCESS | FAILED | SKIPPED | RUNNING
+            String errorCode,
+            String message,
+            OffsetDateTime attemptedAt  // 마지막 시도 시각
     ) {}
 }
 
