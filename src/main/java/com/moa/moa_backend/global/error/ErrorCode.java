@@ -2,6 +2,7 @@ package com.moa.moa_backend.global.error;
 
 import org.springframework.http.HttpStatus;
 
+//에러코드
 public enum ErrorCode {
 
     // Request / Common (4xx)
