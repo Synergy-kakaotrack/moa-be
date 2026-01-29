@@ -109,8 +109,6 @@ public class GeminiProjectDigestAdapter implements ProjectDigestGeneratorPort {
             - 필요할 때만 (stage)로 붙여라.
                     
             ### 출력 형식(권장, 요구사항이 다른 형식을 요구하면 조정 가능)
-            ## "%s" 프로젝트 요약
-            - 1~2줄로 프로젝트의 목적과 현재 상태/결론을 말하라.
                     
             ## 핵심 성과/가치(요구사항에 맞춤)
             - (3~8개)
@@ -127,7 +125,7 @@ public class GeminiProjectDigestAdapter implements ProjectDigestGeneratorPort {
             - 코드블록(```), JSON, "아래는" 같은 설명 문구
 
             입력 스크랩(시간순):
-            """.formatted(pn, safe(customPrompt), pn));
+            """.formatted(safe(customPrompt), pn));
         } else {
             sb.append("""
             너는 사용자의 프로젝트 스크랩을 바탕으로 "%s" 프로젝트의 "전체 맥락 + 작업 흐름 + 의사결정/변경"을 요약하는 기록 편집자다.
@@ -157,8 +155,6 @@ public class GeminiProjectDigestAdapter implements ProjectDigestGeneratorPort {
             - 트러블슈팅: "에러/실패/원인/해결/우회/재현/대응"
 
             ### 출력 형식(섹션 제목/순서 고정)
-            ## "%s" 프로젝트 요약
-            - 1~2줄로 프로젝트의 목적과 현재 상태/결론을 말하라.
 
             ## 프로젝트 맥락(왜 이걸 했는가)
             - 문제/목표/제약(시간/기술/팀/환경)이 무엇이었는지 3~6개 불릿
@@ -197,7 +193,7 @@ public class GeminiProjectDigestAdapter implements ProjectDigestGeneratorPort {
             - 코드블록(```), JSON, "아래는" 같은 설명 문구
 
             입력 스크랩(시간순):
-            """.formatted(pn, pn));
+            """.formatted(pn));
         }
 
         int included = 0;
