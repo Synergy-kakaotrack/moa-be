@@ -12,18 +12,19 @@ import java.util.List;
 public interface ProjectScrapForDigestRepository extends Repository<Scrap, Long> {
 
     @Query("""
-        select new com.moa.moa_backend.domain.scrap.repository.projection.ScrapForDigestView(
-            s.id, s.subtitle, s.memo, s.rawHtml, s.capturedAt
-        )
-        from Scrap s
-        where s.userId = :userId
-          and s.projectId = :projectId
-        order by s.capturedAt desc, s.id desc
-    """)
+    select new com.moa.moa_backend.domain.scrap.repository.projection.ScrapForDigestView(
+        s.id, s.stage, s.subtitle, s.memo, s.rawHtml, s.capturedAt
+    )
+    from Scrap s
+    where s.userId = :userId
+      and s.projectId = :projectId
+    order by s.capturedAt desc, s.id desc
+""")
     List<ScrapForDigestView> findRecentForDigest(
             @Param("userId") Long userId,
             @Param("projectId") Long projectId,
             Pageable pageable
     );
+
 }
 

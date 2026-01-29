@@ -205,14 +205,9 @@ public class GeminiProjectDigestAdapter implements ProjectDigestGeneratorPort {
         return DigestInputNormalizer.clampTotal(sb.toString());
     }
 
-    /**
-     * ScrapForDigestView에 stage 필드가 없다면 null 반환하도록 둔다.
-     * - 나중에 projection에 stage를 추가하면 여기만 바꾸면 됨.
-     */
+
     private String extractStage(ScrapForDigestView s) {
-        // TODO: projection에 stage 추가 시 연결
-        // 예: return s.stage();
-        return null;
+        return s.stage();
     }
 
     private String safe(String s) {

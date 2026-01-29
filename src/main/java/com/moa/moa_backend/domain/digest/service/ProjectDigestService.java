@@ -191,6 +191,7 @@ public class ProjectDigestService {
             List<ScrapForDigestView> normalized = scraps.stream()
                     .map(s -> new ScrapForDigestView(
                             s.scrapId(),
+                            s.stage(),
                             s.subtitle(),
                             s.memo(),
                             DigestInputNormalizer.normalizeRawHtml(s.rawHtml()),
