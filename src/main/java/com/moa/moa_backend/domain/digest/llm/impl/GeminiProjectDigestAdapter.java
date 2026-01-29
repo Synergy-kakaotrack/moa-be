@@ -125,7 +125,7 @@ public class GeminiProjectDigestAdapter implements ProjectDigestGeneratorPort {
             - 코드블록(```), JSON, "아래는" 같은 설명 문구
 
             입력 스크랩(시간순):
-            """.formatted(safe(customPrompt), pn));
+            """.formatted(pn, safe(customPrompt)));
         } else {
             sb.append("""
             너는 사용자의 프로젝트 스크랩을 바탕으로 "%s" 프로젝트의 "전체 맥락 + 작업 흐름 + 의사결정/변경"을 요약하는 기록 편집자다.
