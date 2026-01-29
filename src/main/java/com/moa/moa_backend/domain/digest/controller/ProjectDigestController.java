@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,11 +21,17 @@ public class ProjectDigestController {
 
     private final ProjectDigestService projectDigestService;
 
+    /**
+     * 프로젝트 요약 refresh 요청 바디
+     * - prompt가 없거나 비어있으면 DEFAULT 요약
+     * - prompt가 있으면 CUSTOM 요약
+     */
     public record RefreshRequest(
             @Schema(
-                    description = "커스텀 요약 프롬프트. 비어있거나 null이면 DEFAULT 요약을 생성/갱신한다.",
+                    description = "커스텀 요약 프롬프트 (최대 500자). 비어있거나 null이면 DEFAULT 요약을 생성/갱신한다.",
                     example = "면접용으로 프로젝트를 핵심 성과 중심으로 요약해줘"
             )
+            @Size(max = 500, message = "프롬프트는 최대 500자까지 입력할 수 있습니다.")
             String prompt
     ) {}
 
@@ -63,6 +71,7 @@ public class ProjectDigestController {
     public ProjectDigestResponse refresh(
             @Parameter(description = "요청 사용자 ID", required = true, example = "1")
             @RequestHeader("X-User-Id") Long userId,
+
             @Parameter(description = "프로젝트 ID", required = true, example = "10")
             @PathVariable Long projectId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -70,7 +79,7 @@ public class ProjectDigestController {
                     required = false,
                     content = @Content(schema = @Schema(implementation = RefreshRequest.class))
             )
-            @org.springframework.web.bind.annotation.RequestBody(required = false) RefreshRequest req
+            @org.springframework.web.bind.annotation.RequestBody(required = false) @Valid RefreshRequest req
     ) {
         String prompt = (req == null) ? null : req.prompt();
         return projectDigestService.refresh(userId, projectId, prompt);
