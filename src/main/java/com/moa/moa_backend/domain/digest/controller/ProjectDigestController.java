@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/projects/{projectId}/digest")
+@RequestMapping("/api/projects/{projectId}")
 @Tag(name = "ProjectDigest", description = "프로젝트 전체 요약 API")
 public class ProjectDigestController {
 
@@ -27,7 +27,7 @@ public class ProjectDigestController {
             String prompt
     ) {}
 
-    @GetMapping
+    @GetMapping("/digest")
     @Operation(
             summary = "프로젝트 요약 조회",
             description = "프로젝트에 저장된 요약(마크다운)을 조회한다. 요약이 없으면 digest=null, meta.exists=false로 반환한다."
@@ -46,7 +46,7 @@ public class ProjectDigestController {
         return projectDigestService.getDigest(userId, projectId);
     }
 
-    @PostMapping("/refresh")
+    @PostMapping("/digest:refresh")
     @Operation(
             summary = "프로젝트 요약 생성/갱신",
             description = """
