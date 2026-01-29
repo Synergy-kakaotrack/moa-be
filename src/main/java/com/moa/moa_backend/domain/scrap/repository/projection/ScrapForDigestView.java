@@ -9,6 +9,7 @@ import java.time.Instant;
  */
 public record ScrapForDigestView(
         Long scrapId,
+        String stage,
         String subtitle,
         String memo,
         String rawHtml,

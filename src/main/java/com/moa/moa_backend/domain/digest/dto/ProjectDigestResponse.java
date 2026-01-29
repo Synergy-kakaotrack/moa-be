@@ -1,16 +1,13 @@
 package com.moa.moa_backend.domain.digest.dto;
 
+import com.moa.moa_backend.domain.digest.entity.DigestKind;
+
 import java.time.OffsetDateTime;
 
-/**
- * 프론트 응답용 DTO
- * - digest는 없을 수 있으므로 null 허용
- * - digest는 MARKDOWN TEXT
- */
-public record StageDigestResponse(
+public record ProjectDigestResponse(
         ProjectDto project,
-        String stage,
-        String digest,
+        DigestKind digestKind,   // DEFAULT | CUSTOM
+        String digest,           // markdown, nullable
         Meta meta
 ) {
     public record ProjectDto(Long projectId, String projectName) {}
@@ -26,11 +23,12 @@ public record StageDigestResponse(
     ) {}
 
     public record Refresh(
-            String status,              // SUCCESS | FAILED | SKIPPED | RUNNING
-            String errorCode,
+            String status,              // SUCCESS | FAILED | SKIPPED
+            String errorCode,           // NOT_OUTDATED | NO_SCRAPS | RATE_LIMITED | PROVIDER_ERROR ...
             String message,
             Integer retryAfterSeconds,
-            OffsetDateTime attemptedAt  // 마지막 시도 시각
+            OffsetDateTime attemptedAt
     ) {}
 }
+
 

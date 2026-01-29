@@ -41,6 +41,11 @@ moa:
       daily-limit: 200           # 하루 처리량 제한
       lookback-days: 7           # 최근 7일 활동 stage만 대상
 
+      backoff:
+        initial-ms: 1000                 # 429 첫 backoff(ms)
+        max-ms: 15000                    # 429 backoff 최대(ms)
+        multiplier: 1.8                  # 연속 429 시 backoff 배수
+
 
 ---
 spring:
