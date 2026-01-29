@@ -153,7 +153,6 @@ public class StageDigestService {
 
         // 이미 처리 중이면 409
         if (inFlight.putIfAbsent(lockKey, Boolean.TRUE) != null) {
-            // (선택) in-progress도 meta로 내려주고 싶으면 컨트롤러/예외핸들러에서 가공 가능
             throw new ApiException(ErrorCode.DIGEST_REFRESH_IN_PROGRESS);
         }
 
@@ -244,6 +243,7 @@ public class StageDigestService {
             List<ScrapForDigestView> normalized = scraps.stream()
                     .map(s -> new ScrapForDigestView(
                             s.scrapId(),
+                            s.stage(),
                             s.subtitle(),
                             s.memo(),
                             DigestInputNormalizer.normalizeRawHtml(s.rawHtml()),

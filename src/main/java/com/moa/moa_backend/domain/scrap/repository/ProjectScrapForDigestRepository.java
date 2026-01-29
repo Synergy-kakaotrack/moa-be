@@ -9,7 +9,7 @@ import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
-public interface ScrapForDigestRepository extends Repository<Scrap, Long> {
+public interface ProjectScrapForDigestRepository extends Repository<Scrap, Long> {
 
     @Query("""
     select new com.moa.moa_backend.domain.scrap.repository.projection.ScrapForDigestView(
@@ -18,14 +18,13 @@ public interface ScrapForDigestRepository extends Repository<Scrap, Long> {
     from Scrap s
     where s.userId = :userId
       and s.projectId = :projectId
-      and s.stage = :stage
     order by s.capturedAt desc, s.id desc
 """)
     List<ScrapForDigestView> findRecentForDigest(
             @Param("userId") Long userId,
             @Param("projectId") Long projectId,
-            @Param("stage") String stage,
             Pageable pageable
     );
 
 }
+

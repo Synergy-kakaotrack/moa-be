@@ -109,57 +109,62 @@ public class StageDigestAutoRefreshScheduler {
                 try {
                     StageDigestResponse res = stageDigestService.refresh(t.userId(), t.projectId(), t.stage());
 
-                    StageDigestResponse.Refresh refresh = (res.meta() != null) ? res.meta().refresh() : null;
-                    String status = (refresh != null) ? refresh.status() : null;
+                    StageDigestResponse.Refresh refresh = res.meta().refresh();
 
-                    if ("SUCCESS".equals(status)) {
-                        success++;
-                        // 성공이면 rate-limit backoff 리셋(또는 완화)
-                        consecutiveRateLimited = 0;
-                        currentBackoffMs = 0;
+                    if (refresh == null) {
+                        unknown++;
+                        log.warn("[DIGEST][SCHED] refresh meta missing. userId={}, projectId={}, stage={}",
+                                t.userId(), t.projectId(), t.stage());
+                    } else {
+                        String status = refresh.status();
 
-                    } else if ("SKIPPED".equals(status)) {
-                        skipped++;
-                        // 스킵도 시스템 부하를 올리는 상황은 아니므로 완화
-                        consecutiveRateLimited = 0;
-                        currentBackoffMs = 0;
-
-                    } else if ("FAILED".equals(status)) {
-                        fail++;
-
-                        String errorCode = refresh != null ? refresh.errorCode() : null;
-                        String message = refresh != null ? refresh.message() : null;
-
-                        log.warn("[DIGEST][SCHED] refresh FAILED. userId={}, projectId={}, stage={}, errorCode={}, msg={}",
-                                t.userId(), t.projectId(), t.stage(), errorCode, message);
-
-                        // RATE_LIMITED면 점진적 backoff 증가
-                        if ("RATE_LIMITED".equals(errorCode)) {
-                            consecutiveRateLimited++;
-
-                            // 1) 응답이 retryAfterSeconds를 주면 우선 사용
-                            Integer retryAfterSeconds = refresh.retryAfterSeconds();
-                            if (retryAfterSeconds != null && retryAfterSeconds > 0) {
-                                currentBackoffMs = Math.min(backoffMaxMs, retryAfterSeconds.longValue() * 1000L);
-                            } else {
-                                // 2) 없으면 지수 백오프
-                                if (currentBackoffMs <= 0) currentBackoffMs = backoffInitialMs;
-                                else currentBackoffMs = Math.min(backoffMaxMs, (long) Math.ceil(currentBackoffMs * backoffMultiplier));
-                            }
-
-                            log.warn("[DIGEST][SCHED] rate limited. consecutive={}, nextBackoffMs={}",
-                                    consecutiveRateLimited, currentBackoffMs);
-                        } else {
-                            // RATE_LIMITED 외 실패는 backoff 리셋 (원하면 유지해도 됨)
+                        if ("SUCCESS".equals(status)) {
+                            success++;
                             consecutiveRateLimited = 0;
                             currentBackoffMs = 0;
-                        }
 
-                    } else {
-                        unknown++;
-                        log.warn("[DIGEST][SCHED] refresh status unknown. userId={}, projectId={}, stage={}",
-                                t.userId(), t.projectId(), t.stage());
+                        } else if ("SKIPPED".equals(status)) {
+                            skipped++;
+                            consecutiveRateLimited = 0;
+                            currentBackoffMs = 0;
+
+                        } else if ("FAILED".equals(status)) {
+                            fail++;
+
+                            String errorCode = refresh.errorCode();
+                            String message = refresh.message();
+
+                            log.warn("[DIGEST][SCHED] refresh FAILED. userId={}, projectId={}, stage={}, errorCode={}, msg={}",
+                                    t.userId(), t.projectId(), t.stage(), errorCode, message);
+
+                            if ("RATE_LIMITED".equals(errorCode)) {
+                                consecutiveRateLimited++;
+
+                                Integer retryAfterSeconds = refresh.retryAfterSeconds();
+                                if (retryAfterSeconds != null && retryAfterSeconds > 0) {
+                                    currentBackoffMs = Math.min(backoffMaxMs, retryAfterSeconds.longValue() * 1000L);
+                                } else {
+                                    if (currentBackoffMs <= 0) currentBackoffMs = backoffInitialMs;
+                                    else currentBackoffMs = Math.min(
+                                            backoffMaxMs,
+                                            (long) Math.ceil(currentBackoffMs * backoffMultiplier)
+                                    );
+                                }
+
+                                log.warn("[DIGEST][SCHED] rate limited. consecutive={}, nextBackoffMs={}",
+                                        consecutiveRateLimited, currentBackoffMs);
+                            } else {
+                                consecutiveRateLimited = 0;
+                                currentBackoffMs = 0;
+                            }
+
+                        } else {
+                            unknown++;
+                            log.warn("[DIGEST][SCHED] refresh status unknown. userId={}, projectId={}, stage={}, status={}",
+                                    t.userId(), t.projectId(), t.stage(), status);
+                        }
                     }
+
 
                 } catch (Exception e) {
                     // refresh 내부에서 409(inFlight) 같은 건 예외로 던질 수 있으니 여기는 방어
