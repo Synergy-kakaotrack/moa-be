@@ -163,20 +163,22 @@ public class ProjectDigestService {
             Optional<ProjectDigest> existingOpt =
                     projectDigestRepository.findByUserIdAndProjectId(userId, projectId);
 
-            // DEFAULT + 최신이면 스킵
-            if (kind == DigestKind.DEFAULT && existingOpt.isPresent()) {
+            if (existingOpt.isPresent()) {
                 ProjectDigest existing = existingOpt.get();
 
-                boolean upToDate =
-                        existing.getSourceLastUpdatedAt() != null &&
-                                !latestScrapInstant.isAfter(existing.getSourceLastUpdatedAt());
+                boolean hasDigestText = hasText(existing.getDigestText());
+                boolean upToDate = isUpToDate(existing, latestScrapInstant);
+                boolean same = sameCondition(existing, kind, prompt);
 
-                if (upToDate) {
+                // - 기존 digest 텍스트가 있고
+                // - 스크랩 최신이고
+                // - 요청 조건(kind/prompt)도 동일하면
+                // => SKIPPED
+                if (hasDigestText && upToDate && same) {
                     ProjectDigestResponse.Refresh refreshMeta = refreshSkipped(
                             "NOT_OUTDATED", "Digest is up to date.", attemptedAt
                     );
                     refreshStatusCache.put(userId, projectId, refreshMeta);
-
                     return existingView(project, existing, latestScrapKst, refreshMeta);
                 }
             }
@@ -408,9 +410,29 @@ public class ProjectDigestService {
         }
         return p;
     }
+
+    private boolean isUpToDate(ProjectDigest existing, Instant latestScrapInstant) {
+        if (latestScrapInstant == null) return true; // scraps 없으면 위에서 이미 SKIPPED 처리 중이니 의미상 true
+        Instant src = existing.getSourceLastUpdatedAt();
+        if (src == null) return false;
+        return !latestScrapInstant.isAfter(src);
+    }
+
+    private boolean sameCondition(ProjectDigest existing, DigestKind requestedKind, String requestedPrompt) {
+        if (existing.getDigestKind() != requestedKind) return false;
+
+        if (requestedKind == DigestKind.DEFAULT) {
+            return true; // kind만 같으면 동일 조건
+        }
+
+        // CUSTOM이면 prompt까지 같아야 동일 조건
+        String oldPrompt = normalizePrompt(existing.getPromptText()); // 필드명에 맞게 수정
+        String newPrompt = normalizePrompt(requestedPrompt);
+        return oldPrompt.equals(newPrompt);
+    }
+
+    private String normalizePrompt(String p) {
+        return (p == null) ? "" : p.trim();
+    }
+
 }
-
-
-
-
-
