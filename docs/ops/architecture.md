@@ -17,7 +17,7 @@ MOA 백엔드는 다음 원칙을 기반으로 설계되었다.
 ---
 
 ## 2. CI / CD 아키텍처
-![Image 1: CI/CD Architecture](../images/archi1.gif)
+![Image 1: CI/CD Architecture](../images/be-archi1.gif)
 ### 2.1 전체 흐름
 
 1. 개발자가 로컬에서 코드를 작성하고 `main` 브랜치로 push/merge
@@ -88,7 +88,7 @@ Deploy Job 자체가 배포를 수행하는 것이 아니라, **EC2에서 실행
 ---
 
 ## 3. Runtime 아키텍처
-![Image 2: Architecture](../images/archi2.gif)
+![Image 2: Architecture](../images/be-archi2.gif)
 
 ### 3.1 EC2 실행 환경
 

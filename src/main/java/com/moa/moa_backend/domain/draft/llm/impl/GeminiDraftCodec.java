@@ -50,6 +50,8 @@ public class GeminiDraftCodec {
         - projects가 1개 이상이면 projectId는 반드시 projects 중 하나(number)여야 하며 null 금지.
         - projects가 1개 이상이고 recentContext.projectId가 null이 아니면, projectId는 반드시 recentContext.projectId로 출력하라 (scrapText가 매우 명확히 다른 프로젝트를 가리키는 경우만 예외).
         - subtitle은 scrapText를 15~25자 내로 요약해라. 가능하면 null을 쓰지 마라.
+        - subtitle은 scrapText를 요약하되 "최대 25자"를 절대 초과하지 마라. (한글/영문/숫자/기호 섞여도 동일)
+        - 25자를 넘길 것 같으면 더 짧게 다시 요약해서 25자 이하로 맞춰라.
         - 반드시 JSON 객체 1개만 출력하고, 앞뒤로 어떤 문자도 붙이지 마라.
         
         
