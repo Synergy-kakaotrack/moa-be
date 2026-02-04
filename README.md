@@ -129,9 +129,9 @@ MOA는 이를 다음 방식으로 해결합니다.
 ## 🚀 시작하기
 
 ### 필수 요구사항
-- Java 17+
+- Java 21
 - Docker & Docker Compose (권장)
-- PostgreSQL
+- PostgreSQL 16
 
 ### 환경 변수
 ```bash
